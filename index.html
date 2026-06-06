@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Splitter — 50/30/20 Rule</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --needs:    #6366f1;
+      --wants:    #ec4899;
+      --savings:  #10b981;
+      --bg:       #0f0f1a;
+      --surface:  #16162a;
+      --surface2: #1e1e38;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #e8e8f0;
+      --muted:    #7878a0;
+      --radius:   18px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Background glow ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 60% 20%, rgba(236,72,153,0.10) 0%, transparent 55%);
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      animation: fadeDown 0.6s ease both;
+    }
+    header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.25));
+      border: 1px solid rgba(99,102,241,0.35);
+      color: #a5a8ff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35em 0.9em;
+      border-radius: 100px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(1.9rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #fff 30%, #a5a8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin-top: 0.65rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 420px;
+      margin-inline: auto;
+      line-height: 1.6;
+    }
+
+    /* ── Main card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      width: 100%;
+      max-width: 760px;
+      animation: fadeUp 0.6s ease both;
+      animation-delay: 0.1s;
+    }
+
+    /* ── Income input ── */
+    .income-section { margin-bottom: 2rem; }
+    .income-section label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .currency-prefix {
+      position: absolute;
+      left: 1.1rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--muted);
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    #income {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1rem 1rem 2.4rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+    #income::-webkit-inner-spin-button,
+    #income::-webkit-outer-spin-button { -webkit-appearance: none; }
+    #income:focus {
+      border-color: var(--needs);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
+    }
+    #income:focus + .currency-prefix { color: var(--needs); }
+    .input-wrap:focus-within .currency-prefix { color: var(--needs); }
+
+    /* frequency toggle */
+    .freq-row {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+    .freq-btn {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.45em 0;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .freq-btn.active {
+      background: rgba(99,102,241,0.18);
+      border-color: var(--needs);
+      color: #c0c3ff;
+    }
+
+    /* ── Donut chart ── */
+    .chart-area {
+      display: flex;
+      justify-content: center;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    .donut-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    #donutChart {
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 20px rgba(99,102,241,0.25));
+    }
+    .donut-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .donut-center .dc-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .donut-center .dc-amount {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      margin-top: 0.1rem;
+    }
+
+    /* ── Bucket cards ── */
+    .buckets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 560px) {
+      .buckets { grid-template-columns: 1fr; }
+    }
+    .bucket {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem 1rem 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .bucket:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .bucket::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 0 0 14px 14px;
+    }
+    .bucket.needs::after  { background: var(--needs); }
+    .bucket.wants::after  { background: var(--wants); }
+    .bucket.savings::after { background: var(--savings); }
+    .bucket .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      display: inline-block; margin-right: 0.45rem;
+      vertical-align: middle;
+    }
+    .bucket.needs .dot    { background: var(--needs); }
+    .bucket.wants .dot    { background: var(--wants); }
+    .bucket.savings .dot  { background: var(--savings); }
+    .bucket .bucket-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .bucket .bucket-pct {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0.35rem 0 0.1rem;
+      line-height: 1;
+    }
+    .bucket.needs .bucket-pct    { color: #a5a8ff; }
+    .bucket.wants .bucket-pct    { color: #f9a8d4; }
+    .bucket.savings .bucket-pct  { color: #6ee7b7; }
+    .bucket .bucket-amount {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .bucket .bucket-desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      line-height: 1.45;
+    }
+    /* progress bar inside bucket */
+    .bucket .bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 0.85rem;
+      overflow: hidden;
+    }
+    .bucket .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .bucket.needs .bar-fill    { background: var(--needs); }
+    .bucket.wants .bar-fill    { background: var(--wants); }
+    .bucket.savings .bar-fill  { background: var(--savings); }
+
+    /* ── Custom sliders ── */
+    .sliders-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .sliders-section h2 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .slider-row .sl-label {
+      width: 72px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .slider-row .sl-label .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 0.35rem; vertical-align: middle;
+    }
+    .slider-row input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+    }
+    .slider-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .slider-row input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.2);
+    }
+    .slider-row .sl-value {
+      width: 42px;
+      text-align: right;
+      font-size: 0.88rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    #slNeeds  { background: linear-gradient(to right, var(--needs) var(--pct, 50%), var(--surface2) var(--pct, 50%)); }
+    #slWants  { background: linear-gradient(to right, var(--wants) var(--pct, 30%), var(--surface2) var(--pct, 30%)); }
+    #slSavings{ background: linear-gradient(to right, var(--savings) var(--pct, 20%), var(--surface2) var(--pct, 20%)); }
+    .sum-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+    .sum-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.2em 0.6em;
+      border-radius: 99px;
+      background: rgba(16,185,129,0.15);
+      color: #6ee7b7;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sum-badge.warn {
+      background: rgba(251,113,133,0.15);
+      color: #fda4af;
+    }
+    .reset-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.35em 0.85em;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .reset-btn:hover { border-color: var(--needs); color: #c0c3ff; }
+
+    /* ── Annual projection ── */
+    .projection {
+      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.06));
+      border: 1px solid rgba(99,102,241,0.18);
+      border-radius: 12px;
+      padding: 1.1rem 1.3rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 2rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .projection strong { color: var(--text); font-weight: 700; }
+    .projection .proj-item { display: flex; align-items: center; gap: 0.45rem; }
+
+    /* ── Disclaimer ── */
+    .disclaimer {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.55;
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .amount-pulse {
+      animation: pulse 0.35s ease;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">Financial Planning Tool</div>
+  <h1>50 / 30 / 20<br>Budget Splitter</h1>
+  <p>Enter your take-home income and instantly see your ideal budget breakdown.</p>
+</header>
+
+<div class="card">
+
+  <!-- Income Input -->
+  <div class="income-section">
+    <label for="income">Monthly Take-Home Income</label>
+    <div class="input-wrap">
+      <span class="currency-prefix">$</span>
+      <input id="income" type="number" min="0" placeholder="5000" value="5000" />
+    </div>
+    <div class="freq-row">
+      <button class="freq-btn active" data-freq="monthly">Monthly</button>
+      <button class="freq-btn" data-freq="weekly">Weekly</button>
+      <button class="freq-btn" data-freq="annual">Annual</button>
+    </div>
+  </div>
+
+  <!-- Donut Chart -->
+  <div class="chart-area">
+    <div class="donut-container">
+      <svg id="donutChart" width="200" height="200" viewBox="0 0 200 200">
+        <circle id="ringBg"      cx="100" cy="100" r="80" fill="none" stroke="#1e1e38" stroke-width="28"/>
+        <circle id="ringSavings" cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="28"/>
+        <circle id="ringWants"   cx="100" cy="100" r="80" fill="none" stroke="#ec4899" stroke-width="28"/>
+        <circle id="ringNeeds"   cx="100" cy="100" r="80" fill="none" stroke="#6366f1" stroke-width="28"/>
+      </svg>
+      <div class="donut-center">
+        <span class="dc-label">Monthly</span>
+        <span class="dc-amount" id="dcTotal">$5,000</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bucket Cards -->
+  <div class="buckets">
+    <div class="bucket needs">
+      <div class="bucket-title"><span class="dot"></span>Needs</div>
+      <div class="bucket-pct" id="needsPct">50%</div>
+      <div class="bucket-amount" id="needsAmt">$2,500</div>
+      <div class="bucket-desc">Rent · Groceries · Utilities · Insurance</div>
+      <div class="bar-track"><div class="bar-fill" id="needsBar" style="width:50%"></div></div>
+    </div>
+    <div class="bucket wants">
+      <div class="bucket-title"><span class="dot"></span>Wants</div>
+      <div class="bucket-pct" id="wantsPct">30%</div>
+      <div class="bucket-amount" id="wantsAmt">$1,500</div>
+      <div class="bucket-desc">Dining · Entertainment · Hobbies</div>
+      <div class="bar-track"><div class="bar-fill" id="wantsBar" style="width:30%"></div></div>
+    </div>
+    <div class="bucket savings">
+      <div class="bucket-title"><span class="dot"></span>Savings</div>
+      <div class="bucket-pct" id="savingsPct">20%</div>
+      <div class="bucket-amount" id="savingsAmt">$1,000</div>
+      <div class="bucket-desc">Emergency Fund · Investments · Debt</div>
+      <div class="bar-track"><div class="bar-fill" id="savingsBar" style="width:20%"></div></div>
+    </div>
+  </div>
+
+  <!-- Custom Ratio Sliders -->
+  <div class="sliders-section">
+    <h2>Customize Ratios</h2>
+    <div class="slider-row">
+      <div class="sl-label"><span class="dot" style="background:var(--needs)"></span>Needs</div>
+      <input id="slNeeds" type="range" min="0" max="100" value="50" />
+      <div class="sl-value" id="slNeedsVal" style="color:#a5a8ff">50%</div>
+    </div>
+    <div class="slider-row">
+      <div class="sl-label"><span class="dot" style="background:var(--wants)"></span>Wants</div>
+      <input id="slWants" type="range" min="0" max="100" value="30" />
+      <div class="sl-value" id="slWantsVal" style="color:#f9a8d4">30%</div>
+    </div>
+    <div class="slider-row">
+      <div class="sl-label"><span class="dot" style="background:var(--savings)"></span>Savings</div>
+      <input id="slSavings" type="range" min="0" max="100" value="20" />
+      <div class="sl-value" id="slSavingsVal" style="color:#6ee7b7">20%</div>
+    </div>
+    <div class="sum-row">
+      <button class="reset-btn" id="resetBtn">Reset to 50/30/20</button>
+      <span>Total:</span>
+      <span class="sum-badge" id="sumBadge">100%</span>
+    </div>
+  </div>
+
+  <!-- Annual Projection -->
+  <div class="projection">
+    <div class="proj-item">📅 <span>Annual needs: <strong id="projNeeds">$30,000</strong></span></div>
+    <div class="proj-item">🎉 <span>Annual wants: <strong id="projWants">$18,000</strong></span></div>
+    <div class="proj-item">💰 <span>Annual savings: <strong id="projSavings">$12,000</strong></span></div>
+  </div>
+
+  <div class="disclaimer">
+    This tool is for educational purposes only and does not constitute personalized financial advice.<br>
+    Your optimal split may vary based on your cost of living, debt load, and goals.
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let rawIncome = 5000;
+  let freq = 'monthly';
+  let ratios = { needs: 50, wants: 30, savings: 20 };
+
+  // frequency multipliers to get monthly equivalent
+  const toMonthly = { monthly: 1, weekly: 4.333, annual: 1/12 };
+  const freqLabel = { monthly: 'Monthly', weekly: 'Weekly', annual: 'Annual' };
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const incomeEl    = document.getElementById('income');
+  const dcTotal     = document.getElementById('dcTotal');
+  const needsPct    = document.getElementById('needsPct');
+  const wantsPct    = document.getElementById('wantsPct');
+  const savingsPct  = document.getElementById('savingsPct');
+  const needsAmt    = document.getElementById('needsAmt');
+  const wantsAmt    = document.getElementById('wantsAmt');
+  const savingsAmt  = document.getElementById('savingsAmt');
+  const needsBar    = document.getElementById('needsBar');
+  const wantsBar    = document.getElementById('wantsBar');
+  const savingsBar  = document.getElementById('savingsBar');
+  const projNeeds   = document.getElementById('projNeeds');
+  const projWants   = document.getElementById('projWants');
+  const projSavings = document.getElementById('projSavings');
+  const slNeeds     = document.getElementById('slNeeds');
+  const slWants     = document.getElementById('slWants');
+  const slSavings   = document.getElementById('slSavings');
+  const slNeedsVal  = document.getElementById('slNeedsVal');
+  const slWantsVal  = document.getElementById('slWantsVal');
+  const slSavingsVal= document.getElementById('slSavingsVal');
+  const sumBadge    = document.getElementById('sumBadge');
+  const resetBtn    = document.getElementById('resetBtn');
+  const donutCenter = document.querySelector('.donut-center .dc-label');
+
+  // Donut segments
+  const ringNeeds   = document.getElementById('ringNeeds');
+  const ringWants   = document.getElementById('ringWants');
+  const ringSavings = document.getElementById('ringSavings');
+  const CIRC = 2 * Math.PI * 80; // circumference
+
+  // ── Format ─────────────────────────────────────────────────────────────────
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  // ── Donut ──────────────────────────────────────────────────────────────────
+  function setSegment(el, pct, offset) {
+    const len = (pct / 100) * CIRC;
+    const gap = CIRC - len;
+    el.style.strokeDasharray  = `${len} ${gap}`;
+    el.style.strokeDashoffset = -offset * CIRC / 100;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function render() {
+    const monthly = rawIncome * toMonthly[freq];
+    const n = monthly * ratios.needs   / 100;
+    const w = monthly * ratios.wants   / 100;
+    const s = monthly * ratios.savings / 100;
+
+    // donut center
+    dcTotal.textContent = fmt(monthly);
+    donutCenter.textContent = freqLabel[freq];
+
+    // donut segments (needs, then wants offset by needs, then savings)
+    setSegment(ringNeeds,   ratios.needs,   0);
+    setSegment(ringWants,   ratios.wants,   ratios.needs);
+    setSegment(ringSavings, ratios.savings, ratios.needs + ratios.wants);
+
+    // bucket cards
+    needsPct.textContent   = ratios.needs   + '%';
+    wantsPct.textContent   = ratios.wants   + '%';
+    savingsPct.textContent = ratios.savings + '%';
+    setAmt(needsAmt,   n);
+    setAmt(wantsAmt,   w);
+    setAmt(savingsAmt, s);
+    needsBar.style.width   = ratios.needs   + '%';
+    wantsBar.style.width   = ratios.wants   + '%';
+    savingsBar.style.width = ratios.savings + '%';
+
+    // annual projections (always use monthly * 12)
+    const ann = monthly * 12 / toMonthly[freq] * toMonthly[freq];
+    projNeeds.textContent   = fmt(n * 12 / toMonthly[freq] * toMonthly[freq]);
+    projWants.textContent   = fmt(w * 12 / toMonthly[freq] * toMonthly[freq]);
+    projSavings.textContent = fmt(s * 12 / toMonthly[freq] * toMonthly[freq]);
+
+    // slider track fill
+    slNeeds.style.setProperty('--pct', ratios.needs   + '%');
+    slWants.style.setProperty('--pct', ratios.wants   + '%');
+    slSavings.style.setProperty('--pct', ratios.savings + '%');
+  }
+
+  function setAmt(el, val) {
+    const next = fmt(val);
+    if (el.textContent !== next) {
+      el.textContent = next;
+      el.classList.remove('amount-pulse');
+      void el.offsetWidth;
+      el.classList.add('amount-pulse');
+    }
+  }
+
+  // ── Income input ───────────────────────────────────────────────────────────
+  incomeEl.addEventListener('input', () => {
+    rawIncome = parseFloat(incomeEl.value) || 0;
+    render();
+  });
+
+  // ── Frequency ─────────────────────────────────────────────────────────────
+  document.querySelectorAll('.freq-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      freq = btn.dataset.freq;
+      render();
+    });
+  });
+
+  // ── Sliders with lock-sum logic ────────────────────────────────────────────
+  // When one slider moves, redistribute the remainder equally among the other two.
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  function onSlider(changed) {
+    const val = parseInt(changed.value);
+    const key = changed.id === 'slNeeds' ? 'needs' : changed.id === 'slWants' ? 'wants' : 'savings';
+    const others = key === 'needs'
+      ? ['wants', 'savings']
+      : key === 'wants'
+      ? ['needs', 'savings']
+      : ['needs', 'wants'];
+
+    const prev = ratios[key];
+    const delta = val - prev;
+    ratios[key] = val;
+
+    // distribute delta proportionally across the others, or equally if both 0
+    const oa = ratios[others[0]], ob = ratios[others[1]];
+    const total = oa + ob;
+    if (total > 0) {
+      const ra = oa / total, rb = ob / total;
+      ratios[others[0]] = clamp(Math.round(oa - delta * ra), 0, 100);
+      ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
+    } else {
+      ratios[others[0]] = clamp(Math.round(-delta / 2), 0, 100);
+      ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
+    }
+
+    // clamp & correct
+    ratios[others[1]] = clamp(ratios[others[1]], 0, 100);
+    const sum = ratios.needs + ratios.wants + ratios.savings;
+    if (sum !== 100) ratios[key] += 100 - sum;
+    ratios[key] = clamp(ratios[key], 0, 100);
+
+    // sync slider thumbs
+    slNeeds.value   = ratios.needs;
+    slWants.value   = ratios.wants;
+    slSavings.value = ratios.savings;
+    slNeedsVal.textContent   = ratios.needs   + '%';
+    slWantsVal.textContent   = ratios.wants   + '%';
+    slSavingsVal.textContent = ratios.savings + '%';
+
+    const sum2 = ratios.needs + ratios.wants + ratios.savings;
+    sumBadge.textContent = sum2 + '%';
+    sumBadge.className = 'sum-badge' + (sum2 === 100 ? '' : ' warn');
+
+    render();
+  }
+
+  slNeeds.addEventListener('input',   () => onSlider(slNeeds));
+  slWants.addEventListener('input',   () => onSlider(slWants));
+  slSavings.addEventListener('input', () => onSlider(slSavings));
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  resetBtn.addEventListener('click', () => {
+    ratios = { needs: 50, wants: 30, savings: 20 };
+    slNeeds.value   = 50; slWants.value = 30; slSavings.value = 20;
+    slNeedsVal.textContent   = '50%';
+    slWantsVal.textContent   = '30%';
+    slSavingsVal.textContent = '20%';
+    sumBadge.textContent = '100%';
+    sumBadge.className = 'sum-badge';
+    render();
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
