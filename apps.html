@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Apps — Budget Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --needs:   #6366f1; --wants:   #ec4899; --savings: #10b981;
+      --bg:      #0f0f1a; --surface: #16162a; --surface2:#1e1e38;
+      --border:  rgba(255,255,255,0.07); --text: #e8e8f0; --muted: #7878a0;
+      --radius:  18px;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 2.5rem 1rem 4rem;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 60% 20%, rgba(236,72,153,0.10) 0%, transparent 55%);
+    }
+
+    .back-btn {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.8rem; font-weight: 600;
+      padding: 0.5em 1em; border-radius: 99px; text-decoration: none;
+      transition: all 0.15s; margin-bottom: 2rem;
+      max-width: 760px; width: 100%;
+    }
+    .back-btn:hover { border-color: var(--needs); color: #c0c3ff; }
+    .back-btn .arrow { font-size: 0.9rem; }
+
+    header {
+      text-align: center; margin-bottom: 2.5rem; width: 100%; max-width: 760px;
+      animation: fadeDown 0.6s ease both;
+    }
+    header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.25));
+      border: 1px solid rgba(99,102,241,0.35); color: #a5a8ff;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 0.35em 0.9em;
+      border-radius: 100px; margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(1.7rem, 5vw, 2.6rem); font-weight: 800;
+      letter-spacing: -0.03em; line-height: 1.15;
+      background: linear-gradient(135deg, #fff 30%, #a5a8ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin-top: 0.65rem; color: var(--muted); font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.1rem;
+      width: 100%; max-width: 760px;
+      animation: fadeUp 0.6s ease both; animation-delay: 0.1s;
+    }
+    @media (max-width: 480px) { .apps-grid { grid-template-columns: 1fr; } }
+
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.4rem 1.2rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      position: relative; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .app-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      border-color: rgba(99,102,241,0.25);
+    }
+    .app-card-top { display: flex; align-items: flex-start; gap: 1rem; }
+    .app-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0;
+    }
+    .app-info { flex: 1; min-width: 0; }
+    .app-name {
+      font-size: 1rem; font-weight: 700; color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .app-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+
+    .coming-soon-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 0.78rem; font-weight: 700;
+      padding: 0.6em 1em;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: default; user-select: none;
+      transition: border-color 0.2s;
+    }
+    .app-card:hover .coming-soon-btn {
+      border-color: rgba(99,102,241,0.3);
+      color: #a5a8ff;
+    }
+    .coming-soon-btn .cs-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0;
+      animation: blink 1.8s ease-in-out infinite;
+    }
+    .app-card:hover .cs-dot { background: #a5a8ff; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* unique accent line per card */
+    .app-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .app-card:nth-child(1)::after  { background: linear-gradient(90deg,#6366f1,#818cf8); }
+    .app-card:nth-child(2)::after  { background: linear-gradient(90deg,#10b981,#34d399); }
+    .app-card:nth-child(3)::after  { background: linear-gradient(90deg,#ec4899,#f472b6); }
+    .app-card:nth-child(4)::after  { background: linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .app-card:nth-child(5)::after  { background: linear-gradient(90deg,#06b6d4,#67e8f9); }
+    .app-card:nth-child(6)::after  { background: linear-gradient(90deg,#8b5cf6,#c4b5fd); }
+    .app-card:nth-child(7)::after  { background: linear-gradient(90deg,#ef4444,#fca5a5); }
+    .app-card:nth-child(8)::after  { background: linear-gradient(90deg,#84cc16,#bef264); }
+    .app-card:nth-child(9)::after  { background: linear-gradient(90deg,#f97316,#fdba74); }
+    .app-card:nth-child(10)::after { background: linear-gradient(90deg,#14b8a6,#5eead4); }
+
+    footer {
+      margin-top: 3rem; text-align: center;
+      font-size: 0.7rem; color: var(--muted);
+      padding-top: 1.5rem; border-top: 1px solid var(--border);
+      width: 100%; max-width: 760px;
+    }
+
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn"><span class="arrow">←</span> Back to Budget Splitter</a>
+
+<header>
+  <div class="badge">Financial Tools Suite</div>
+  <h1>All Our Apps</h1>
+  <p>A growing collection of free financial tools. More launching soon.</p>
+</header>
+
+<div class="apps-grid">
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#1e1e3a,#2d2d55)">📊</div>
+      <div class="app-info">
+        <div class="app-name">Expense Tracker</div>
+        <div class="app-desc">Log daily spending, tag categories, and see exactly where your money goes each month.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#0f2a1f,#1a4030)">🎯</div>
+      <div class="app-info">
+        <div class="app-name">Savings Goal Planner</div>
+        <div class="app-desc">Set a target, pick a deadline, and track your progress with a visual countdown.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#2a0f1e,#401a30)">💳</div>
+      <div class="app-info">
+        <div class="app-name">Debt Payoff Calculator</div>
+        <div class="app-desc">Compare avalanche vs snowball strategies and find your exact debt-free date.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#2a1f0f,#40300f)">📈</div>
+      <div class="app-info">
+        <div class="app-name">Investment Portfolio Tracker</div>
+        <div class="app-desc">Monitor your holdings, returns, and asset allocation across all accounts in one view.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#0a1f2a,#0f3040)">🏠</div>
+      <div class="app-info">
+        <div class="app-name">Rent vs Buy Calculator</div>
+        <div class="app-desc">Model the true cost of renting versus buying over 5, 10, and 20 years in any market.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#1a0f2a,#2a1840)">🔮</div>
+      <div class="app-info">
+        <div class="app-name">Net Worth Tracker</div>
+        <div class="app-desc">Add assets and liabilities to see your real net worth and watch it grow over time.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#2a0f0f,#401515)">🧾</div>
+      <div class="app-info">
+        <div class="app-name">Tax Estimator</div>
+        <div class="app-desc">Estimate your annual tax liability based on income, deductions, and your country's brackets.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#162a0f,#224010)">🌱</div>
+      <div class="app-info">
+        <div class="app-name">Retirement Planner</div>
+        <div class="app-desc">Calculate how much you need to retire at any age using your income, savings rate, and goals.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#2a1a0f,#402510)">💱</div>
+      <div class="app-info">
+        <div class="app-name">Currency Converter</div>
+        <div class="app-desc">Convert between 30+ currencies with live rates and a built-in travel cost estimator.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-top">
+      <div class="app-icon" style="background:linear-gradient(135deg,#0f2a28,#104030)">🤝</div>
+      <div class="app-info">
+        <div class="app-name">Bill Split Calculator</div>
+        <div class="app-desc">Split bills fairly between any number of people — by equal share, percentage, or custom amount.</div>
+      </div>
+    </div>
+    <div class="coming-soon-btn"><span class="cs-dot"></span> Coming Soon</div>
+  </div>
+
+</div>
+
+<footer>© 2025 Budget Tools · Educational use only · Not financial advice</footer>
+
+</body>
+</html>
