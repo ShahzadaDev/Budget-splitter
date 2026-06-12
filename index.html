@@ -4,1304 +4,1387 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Budget Splitter — 50/30/20 Rule</title>
+
+  <!-- ── Advanced Libraries ────────────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --needs:   #6366f1; --wants:   #ec4899; --savings: #10b981;
-      --bg:      #0f0f1a; --surface: #16162a; --surface2:#1e1e38;
-      --border:  rgba(255,255,255,0.07); --text: #e8e8f0; --muted: #7878a0;
-      --radius:  18px;
-    }
-    body {
-      background: var(--bg); color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; padding: 2rem 1rem 0;
-    }
-    body::before {
-      content: ''; position: fixed; inset: 0; z-index: -1;
-      background:
-        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 35% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 30% at 60% 20%, rgba(236,72,153,0.10) 0%, transparent 55%);
-    }
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCOPED RESET — only affects #budget-app and its children.
+   Will NOT leak into or be affected by the host website's styles.
+   ═══════════════════════════════════════════════════════════════════════════ */
+#budget-app,
+#budget-app::before,
+#budget-app::after,
+#budget-app *,
+#budget-app *::before,
+#budget-app *::after {
+  box-sizing: border-box !important;
+}
+#budget-app * {
+  font-family: inherit;
+  line-height: inherit;
+}
+#budget-app button,
+#budget-app input,
+#budget-app select,
+#budget-app textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+#budget-app a {
+  color: inherit;
+  text-decoration: none;
+}
+#budget-app img, #budget-app canvas, #budget-app svg {
+  display: block;
+  max-width: 100%;
+}
 
-    /* ── Country selector ── */
-    .country-bar {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0.5rem; margin-bottom: 1.5rem;
-      animation: fadeDown 0.5s ease both;
-    }
-    .country-bar label {
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted);
-    }
-    .country-select-wrap {
-      position: relative; display: inline-flex; align-items: center;
-    }
-    .flag-display {
-      position: absolute; left: 0.7rem; font-size: 1.1rem;
-      pointer-events: none; z-index: 1;
-    }
-    #countrySelect {
-      background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: 10px; color: var(--text);
-      font-size: 0.85rem; font-weight: 600;
-      padding: 0.5em 2.2em 0.5em 2.6rem;
-      appearance: none; -webkit-appearance: none;
-      cursor: pointer; outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      min-width: 200px;
-    }
-    #countrySelect:focus {
-      border-color: var(--needs); box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
-    }
-    .country-select-wrap::after {
-      content: '▾'; position: absolute; right: 0.7rem;
-      color: var(--muted); pointer-events: none; font-size: 0.8rem;
-    }
-    .currency-tag {
-      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.25);
-      color: #a5a8ff; font-size: 0.75rem; font-weight: 700;
-      padding: 0.3em 0.7em; border-radius: 99px; letter-spacing: 0.06em;
-      transition: all 0.2s;
-    }
+/* ═══════════════════════════════════════════════════════════════════════════
+   CUSTOM PROPERTIES  (prefixed --ba- to avoid host-page collisions)
+   ═══════════════════════════════════════════════════════════════════════════ */
+#budget-app {
+  --ba-needs:    #6366f1;
+  --ba-wants:    #ec4899;
+  --ba-savings:  #10b981;
+  --ba-bg:       #0f0f1a;
+  --ba-surface:  #16162a;
+  --ba-surface2: #1e1e38;
+  --ba-border:   rgba(255,255,255,0.07);
+  --ba-text:     #e8e8f0;
+  --ba-muted:    #7878a0;
+  --ba-radius:   18px;
 
-    /* ── Header ── */
-    header {
-      text-align: center; margin-bottom: 2rem;
-      animation: fadeDown 0.6s ease both;
-    }
-    header .badge {
-      display: inline-block;
-      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.25));
-      border: 1px solid rgba(99,102,241,0.35); color: #a5a8ff;
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; padding: 0.35em 0.9em;
-      border-radius: 100px; margin-bottom: 1rem;
-    }
-    h1 {
-      font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 800;
-      letter-spacing: -0.03em; line-height: 1.15;
-      background: linear-gradient(135deg, #fff 30%, #a5a8ff 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    header p {
-      margin-top: 0.65rem; color: var(--muted); font-size: 0.95rem;
-      max-width: 420px; margin-inline: auto; line-height: 1.6;
-    }
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--ba-bg);
+  color: var(--ba-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 0;
+  overflow-x: hidden;
+}
 
-    /* ── Card ── */
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 2rem; width: 100%;
-      max-width: 760px; animation: fadeUp 0.6s ease both; animation-delay: 0.1s;
-    }
+/* Background glow */
+#budget-app .ba-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 60% 20%, rgba(236,72,153,0.10) 0%, transparent 55%);
+}
+#budget-app > *:not(.ba-glow) { position: relative; z-index: 1; }
 
-    /* ── Income input ── */
-    .income-section { margin-bottom: 2rem; }
-    .income-section label {
-      display: block; font-size: 0.78rem; font-weight: 600;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 0.6rem;
-    }
-    .input-wrap { position: relative; display: flex; align-items: center; }
-    .currency-prefix {
-      position: absolute; left: 1.1rem; font-size: 1.1rem; font-weight: 700;
-      color: var(--muted); pointer-events: none; transition: color 0.2s;
-      max-width: 3rem; white-space: nowrap; overflow: hidden;
-    }
-    #income {
-      width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 1rem 1rem 1rem 3.2rem;
-      font-size: 1.6rem; font-weight: 700; color: var(--text);
-      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-      -moz-appearance: textfield;
-    }
-    #income::-webkit-inner-spin-button, #income::-webkit-outer-spin-button { -webkit-appearance: none; }
-    #income:focus { border-color: var(--needs); box-shadow: 0 0 0 3px rgba(99,102,241,0.18); }
-    .input-wrap:focus-within .currency-prefix { color: var(--needs); }
+/* ── Country bar ─────────────────────────────────────────────────────── */
+#budget-app .ba-country-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 760px;
+  animation: ba-fadeDown 0.5s ease both;
+}
+#budget-app .ba-country-bar label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+}
+#budget-app .ba-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+#budget-app .ba-flag {
+  position: absolute;
+  left: 0.7rem;
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 1;
+  line-height: 1;
+}
+#budget-app .ba-select-wrap::after {
+  content: '▾';
+  position: absolute;
+  right: 0.75rem;
+  color: var(--ba-muted);
+  pointer-events: none;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+#budget-app #ba-country {
+  background: var(--ba-surface2) !important;
+  border: 1.5px solid var(--ba-border) !important;
+  border-radius: 10px !important;
+  color: var(--ba-text) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  padding: 0.5em 2.4em 0.5em 2.8rem !important;
+  cursor: pointer;
+  min-width: 210px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#budget-app #ba-country:focus {
+  border-color: var(--ba-needs) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.18) !important;
+}
+#budget-app #ba-country option {
+  background: #1e1e38;
+  color: #e8e8f0;
+}
+#budget-app .ba-currency-tag {
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.28);
+  color: #a5a8ff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.3em 0.75em;
+  border-radius: 99px;
+  letter-spacing: 0.06em;
+  transition: all 0.25s;
+}
 
-    .freq-row { display: flex; gap: 0.4rem; margin-top: 0.75rem; }
-    .freq-btn {
-      flex: 1; background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: 8px; color: var(--muted); font-size: 0.78rem;
-      font-weight: 600; padding: 0.45em 0; cursor: pointer;
-      transition: all 0.15s; letter-spacing: 0.04em;
-    }
-    .freq-btn.active { background: rgba(99,102,241,0.18); border-color: var(--needs); color: #c0c3ff; }
+/* ── Header ──────────────────────────────────────────────────────────── */
+#budget-app header {
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 760px;
+  animation: ba-fadeDown 0.6s ease both;
+}
+#budget-app .ba-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.25));
+  border: 1px solid rgba(99,102,241,0.35);
+  color: #a5a8ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.35em 0.9em;
+  border-radius: 100px;
+  margin-bottom: 1rem;
+}
+#budget-app h1 {
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  background: linear-gradient(135deg, #fff 30%, #a5a8ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+#budget-app header p {
+  margin-top: 0.65rem;
+  color: var(--ba-muted);
+  font-size: 0.95rem;
+  max-width: 420px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
 
-    /* ── Donut ── */
-    .chart-area { display: flex; justify-content: center; margin: 1.5rem 0; }
-    .donut-container { position: relative; width: 200px; height: 200px; }
-    #donutChart { transform: rotate(-90deg); filter: drop-shadow(0 0 20px rgba(99,102,241,0.25)); }
-    .donut-center {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; pointer-events: none;
-    }
-    .donut-center .dc-label {
-      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted);
-    }
-    .donut-center .dc-amount {
-      font-size: 1.2rem; font-weight: 800; color: #fff;
-      letter-spacing: -0.02em; margin-top: 0.1rem; text-align: center;
-      max-width: 120px; word-break: break-all;
-    }
+/* ── Main card ───────────────────────────────────────────────────────── */
+#budget-app .ba-card {
+  background: var(--ba-surface);
+  border: 1px solid var(--ba-border);
+  border-radius: var(--ba-radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 760px;
+  animation: ba-fadeUp 0.6s ease both;
+  animation-delay: 0.1s;
+}
 
-    /* ── Buckets ── */
-    .buckets { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 2rem; }
-    @media (max-width: 560px) { .buckets { grid-template-columns: 1fr; } }
-    .bucket {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 14px; padding: 1.2rem 1rem 1rem;
-      position: relative; overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .bucket:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
-    .bucket::after {
-      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-      height: 3px; border-radius: 0 0 14px 14px;
-    }
-    .bucket.needs::after   { background: var(--needs); }
-    .bucket.wants::after   { background: var(--wants); }
-    .bucket.savings::after { background: var(--savings); }
-    .bucket .dot {
-      width: 9px; height: 9px; border-radius: 50%;
-      display: inline-block; margin-right: 0.45rem; vertical-align: middle;
-    }
-    .bucket.needs .dot    { background: var(--needs); }
-    .bucket.wants .dot    { background: var(--wants); }
-    .bucket.savings .dot  { background: var(--savings); }
-    .bucket .bucket-title {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--muted);
-    }
-    .bucket .bucket-pct {
-      font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
-      margin: 0.35rem 0 0.1rem; line-height: 1;
-    }
-    .bucket.needs .bucket-pct    { color: #a5a8ff; }
-    .bucket.wants .bucket-pct    { color: #f9a8d4; }
-    .bucket.savings .bucket-pct  { color: #6ee7b7; }
-    .bucket .bucket-amount { font-size: 0.95rem; font-weight: 700; color: var(--text); word-break: break-all; }
-    .bucket .bucket-desc { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; line-height: 1.45; }
-    .bucket .bar-track { height: 4px; background: var(--border); border-radius: 99px; margin-top: 0.85rem; overflow: hidden; }
-    .bucket .bar-fill {
-      height: 100%; border-radius: 99px;
-      transition: width 0.5s cubic-bezier(.34,1.56,.64,1);
-    }
-    .bucket.needs .bar-fill    { background: var(--needs); }
-    .bucket.wants .bar-fill    { background: var(--wants); }
-    .bucket.savings .bar-fill  { background: var(--savings); }
+/* ── Income input ────────────────────────────────────────────────────── */
+#budget-app .ba-income-section { margin-bottom: 2rem; }
+#budget-app .ba-income-section > label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+  margin-bottom: 0.6rem;
+}
+#budget-app .ba-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+#budget-app .ba-currency-pfx {
+  position: absolute;
+  left: 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ba-muted);
+  pointer-events: none;
+  transition: color 0.2s;
+  max-width: 3.5rem;
+  white-space: nowrap;
+  line-height: 1;
+  z-index: 1;
+}
+#budget-app #ba-income {
+  width: 100% !important;
+  background: var(--ba-surface2) !important;
+  border: 1.5px solid var(--ba-border) !important;
+  border-radius: 12px !important;
+  padding: 1rem 1rem 1rem 3.4rem !important;
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  color: var(--ba-text) !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield !important;
+}
+#budget-app #ba-income::-webkit-inner-spin-button,
+#budget-app #ba-income::-webkit-outer-spin-button { -webkit-appearance: none; }
+#budget-app #ba-income:focus {
+  border-color: var(--ba-needs) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.18) !important;
+}
+#budget-app .ba-input-wrap:focus-within .ba-currency-pfx { color: var(--ba-needs); }
 
-    /* ── Sliders ── */
-    .sliders-section { border-top: 1px solid var(--border); padding-top: 1.5rem; margin-bottom: 1.5rem; }
-    .sliders-section h2 {
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 1.1rem;
-    }
-    .slider-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.9rem; }
-    .slider-row .sl-label { width: 72px; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
-    .slider-row .sl-label .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      display: inline-block; margin-right: 0.35rem; vertical-align: middle;
-    }
-    .slider-row input[type=range] {
-      flex: 1; -webkit-appearance: none; appearance: none;
-      height: 6px; border-radius: 99px; outline: none; cursor: pointer;
-    }
-    .slider-row input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
-      background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4);
-      cursor: pointer; transition: transform 0.1s;
-    }
-    .slider-row input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
-    .slider-row .sl-value { width: 42px; text-align: right; font-size: 0.88rem; font-weight: 700; flex-shrink: 0; }
-    #slNeeds  { background: linear-gradient(to right, var(--needs) var(--pct,50%), var(--surface2) var(--pct,50%)); }
-    #slWants  { background: linear-gradient(to right, var(--wants) var(--pct,30%), var(--surface2) var(--pct,30%)); }
-    #slSavings{ background: linear-gradient(to right, var(--savings) var(--pct,20%), var(--surface2) var(--pct,20%)); }
-    .sum-row {
-      display: flex; align-items: center; justify-content: flex-end;
-      gap: 0.5rem; font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem;
-    }
-    .sum-badge {
-      font-size: 0.78rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 99px;
-      background: rgba(16,185,129,0.15); color: #6ee7b7; transition: background 0.2s, color 0.2s;
-    }
-    .sum-badge.warn { background: rgba(251,113,133,0.15); color: #fda4af; }
-    .reset-btn {
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      font-size: 0.72rem; font-weight: 600; padding: 0.35em 0.85em;
-      border-radius: 99px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em;
-    }
-    .reset-btn:hover { border-color: var(--needs); color: #c0c3ff; }
+#budget-app .ba-freq-row { display: flex; gap: 0.4rem; margin-top: 0.75rem; }
+#budget-app .ba-freq-btn {
+  flex: 1;
+  background: var(--ba-surface2) !important;
+  border: 1.5px solid var(--ba-border) !important;
+  border-radius: 8px !important;
+  color: var(--ba-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  padding: 0.45em 0 !important;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+#budget-app .ba-freq-btn.ba-active {
+  background: rgba(99,102,241,0.18) !important;
+  border-color: var(--ba-needs) !important;
+  color: #c0c3ff !important;
+}
 
-    /* ── Projection ── */
-    .projection {
-      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.06));
-      border: 1px solid rgba(99,102,241,0.18); border-radius: 12px;
-      padding: 1.1rem 1.3rem; display: flex; flex-wrap: wrap;
-      gap: 0.5rem 2rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem;
-    }
-    .projection strong { color: var(--text); font-weight: 700; }
-    .projection .proj-item { display: flex; align-items: center; gap: 0.45rem; }
+/* ── Donut chart ─────────────────────────────────────────────────────── */
+#budget-app .ba-chart-area {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+#budget-app .ba-donut-wrap {
+  position: relative;
+  width: 210px;
+  height: 210px;
+}
+#budget-app #ba-donut {
+  filter: drop-shadow(0 0 24px rgba(99,102,241,0.22));
+}
 
-    /* ── Tips ── */
-    .tips-section { border-top: 1px solid var(--border); padding-top: 1.5rem; }
-    .tips-header {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem;
-    }
-    .tips-header h2 {
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted);
-      display: flex; align-items: center; gap: 0.45rem;
-    }
-    .tips-header h2 span { font-size: 0.9rem; }
-    .tip-category-badge {
-      font-size: 0.68rem; font-weight: 700; padding: 0.2em 0.7em;
-      border-radius: 99px; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.3s;
-    }
-    .tip-category-badge.needs   { background: rgba(99,102,241,0.15); color: #a5a8ff; border: 1px solid rgba(99,102,241,0.25); }
-    .tip-category-badge.wants   { background: rgba(236,72,153,0.15); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.25); }
-    .tip-category-badge.savings { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
-    .tip-category-badge.general { background: rgba(251,191,36,0.12); color: #fcd34d; border: 1px solid rgba(251,191,36,0.2); }
-    .tip-box {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.1rem 1.2rem 0.9rem;
-      min-height: 80px; position: relative; overflow: hidden;
-    }
-    .tip-text {
-      font-size: 0.9rem; line-height: 1.65; color: var(--text);
-      transition: opacity 0.4s ease, transform 0.4s ease;
-    }
-    .tip-text.fade-out { opacity: 0; transform: translateY(-6px); }
-    .tip-text.fade-in  { opacity: 1; transform: translateY(0); }
-    .tip-progress-track { height: 2px; background: var(--border); border-radius: 99px; margin-top: 0.85rem; overflow: hidden; }
-    .tip-progress-fill {
-      height: 100%; border-radius: 99px;
-      background: linear-gradient(90deg, var(--needs), var(--wants));
-      animation: tipProgress 15s linear forwards;
-    }
-    @keyframes tipProgress { from { width: 0%; } to { width: 100%; } }
-    .tip-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 0.6rem; }
-    .tip-count { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
-    .tip-btns { display: flex; gap: 0.35rem; }
-    .tip-btn {
-      background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
-      width: 26px; height: 26px; border-radius: 50%; font-size: 0.75rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
-    }
-    .tip-btn:hover { border-color: var(--needs); color: #c0c3ff; }
+/* ── Bucket cards ────────────────────────────────────────────────────── */
+#budget-app .ba-buckets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 560px) {
+  #budget-app .ba-buckets { grid-template-columns: 1fr; }
+}
+#budget-app .ba-bucket {
+  background: var(--ba-surface2);
+  border: 1px solid var(--ba-border);
+  border-radius: 14px;
+  padding: 1.2rem 1rem 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+#budget-app .ba-bucket:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.32);
+}
+#budget-app .ba-bucket::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 0 0 14px 14px;
+}
+#budget-app .ba-bucket.ba-needs::after   { background: var(--ba-needs); }
+#budget-app .ba-bucket.ba-wants::after   { background: var(--ba-wants); }
+#budget-app .ba-bucket.ba-savings::after { background: var(--ba-savings); }
+#budget-app .ba-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+#budget-app .ba-needs .ba-dot    { background: var(--ba-needs); }
+#budget-app .ba-wants .ba-dot    { background: var(--ba-wants); }
+#budget-app .ba-savings .ba-dot  { background: var(--ba-savings); }
+#budget-app .ba-bucket-title {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--ba-muted);
+  display: flex; align-items: center;
+}
+#budget-app .ba-bucket-pct {
+  font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
+  margin: 0.35rem 0 0.1rem; line-height: 1;
+}
+#budget-app .ba-needs .ba-bucket-pct    { color: #a5a8ff; }
+#budget-app .ba-wants .ba-bucket-pct    { color: #f9a8d4; }
+#budget-app .ba-savings .ba-bucket-pct  { color: #6ee7b7; }
+#budget-app .ba-bucket-amount {
+  font-size: 0.95rem; font-weight: 700; color: var(--ba-text);
+  word-break: break-all;
+}
+#budget-app .ba-bucket-desc {
+  font-size: 0.7rem; color: var(--ba-muted);
+  margin-top: 0.35rem; line-height: 1.45;
+}
+#budget-app .ba-bar-track {
+  height: 4px; background: var(--ba-border);
+  border-radius: 99px; margin-top: 0.85rem; overflow: hidden;
+}
+#budget-app .ba-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.55s cubic-bezier(.34,1.56,.64,1);
+}
+#budget-app .ba-needs .ba-bar-fill    { background: var(--ba-needs); }
+#budget-app .ba-wants .ba-bar-fill    { background: var(--ba-wants); }
+#budget-app .ba-savings .ba-bar-fill  { background: var(--ba-savings); }
 
-    /* ── Disclaimer ── */
-    .disclaimer {
-      text-align: center; font-size: 0.72rem; color: var(--muted);
-      line-height: 1.55; border-top: 1px solid var(--border);
-      padding-top: 1.25rem; margin-top: 1.5rem;
-    }
+/* ── Sliders ─────────────────────────────────────────────────────────── */
+#budget-app .ba-sliders-section {
+  border-top: 1px solid var(--ba-border);
+  padding-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+#budget-app .ba-sliders-section h2 {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ba-muted); margin-bottom: 1.1rem;
+}
+#budget-app .ba-slider-row {
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 0.9rem;
+}
+#budget-app .ba-sl-label {
+  width: 72px; font-size: 0.8rem; font-weight: 600; flex-shrink: 0;
+  display: flex; align-items: center;
+}
+#budget-app .ba-sl-label .ba-dot {
+  width: 8px; height: 8px; margin-right: 0.35rem;
+}
+#budget-app .ba-slider-row input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 6px !important;
+  border-radius: 99px !important;
+  outline: none !important;
+  cursor: pointer;
+  border: none !important;
+  background: none !important;
+  padding: 0 !important;
+}
+#budget-app #ba-sl-needs   { background: linear-gradient(to right, var(--ba-needs) var(--ba-pct,50%), var(--ba-surface2) var(--ba-pct,50%)) !important; }
+#budget-app #ba-sl-wants   { background: linear-gradient(to right, var(--ba-wants) var(--ba-pct,30%), var(--ba-surface2) var(--ba-pct,30%)) !important; }
+#budget-app #ba-sl-savings { background: linear-gradient(to right, var(--ba-savings) var(--ba-pct,20%), var(--ba-surface2) var(--ba-pct,20%)) !important; }
+#budget-app .ba-slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  width: 18px !important; height: 18px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4) !important;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+#budget-app .ba-slider-row input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2) !important;
+}
+#budget-app .ba-slider-row input[type="range"]::-moz-range-thumb {
+  width: 18px !important; height: 18px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4) !important;
+  border: none !important;
+  cursor: pointer;
+}
+#budget-app .ba-sl-value {
+  width: 42px; text-align: right;
+  font-size: 0.88rem; font-weight: 700; flex-shrink: 0;
+}
+#budget-app .ba-sum-row {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 0.5rem; font-size: 0.78rem; color: var(--ba-muted); margin-top: 0.2rem;
+}
+#budget-app .ba-sum-badge {
+  font-size: 0.78rem; font-weight: 700; padding: 0.2em 0.65em;
+  border-radius: 99px; background: rgba(16,185,129,0.15);
+  color: #6ee7b7; transition: all 0.2s;
+}
+#budget-app .ba-sum-badge.ba-warn {
+  background: rgba(251,113,133,0.15); color: #fda4af;
+}
+#budget-app .ba-reset-btn {
+  background: none !important;
+  border: 1px solid var(--ba-border) !important;
+  color: var(--ba-muted) !important;
+  font-size: 0.72rem !important; font-weight: 600 !important;
+  padding: 0.35em 0.85em !important;
+  border-radius: 99px !important;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+#budget-app .ba-reset-btn:hover {
+  border-color: var(--ba-needs) !important;
+  color: #c0c3ff !important;
+}
 
-    /* ── Footer ── */
-    footer {
-      width: 100%; max-width: 760px; margin-top: 2.5rem; padding-bottom: 3rem;
-      animation: fadeUp 0.6s ease both; animation-delay: 0.25s;
-      text-align: center;
-    }
-    .footer-label {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
-    }
-    .view-apps-btn {
-      display: inline-flex; align-items: center; gap: 0.6rem;
-      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(236,72,153,0.15));
-      border: 1px solid rgba(99,102,241,0.35); color: #c0c3ff;
-      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em;
-      padding: 0.85em 2em; border-radius: 12px; cursor: pointer;
-      text-decoration: none; transition: all 0.2s;
-    }
-    .view-apps-btn:hover {
-      background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(236,72,153,0.25));
-      border-color: rgba(99,102,241,0.6); transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(99,102,241,0.2);
-    }
-    .view-apps-btn .arrow { font-size: 1.1rem; transition: transform 0.2s; }
-    .view-apps-btn:hover .arrow { transform: translateX(4px); }
-    .footer-copy {
-      text-align: center; font-size: 0.7rem; color: var(--muted);
-      margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
-    }
+/* ── Projection ──────────────────────────────────────────────────────── */
+#budget-app .ba-projection {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.06));
+  border: 1px solid rgba(99,102,241,0.18);
+  border-radius: 12px; padding: 1.1rem 1.3rem;
+  display: flex; flex-wrap: wrap; gap: 0.5rem 2rem;
+  font-size: 0.85rem; color: var(--ba-muted); margin-bottom: 1.5rem;
+}
+#budget-app .ba-projection strong { color: var(--ba-text); font-weight: 700; }
+#budget-app .ba-proj-item { display: flex; align-items: center; gap: 0.45rem; }
 
-    /* ── Animations ── */
-    @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
-    .amount-pulse { animation: pulse 0.35s ease; }
-    @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+/* ── Tips ────────────────────────────────────────────────────────────── */
+#budget-app .ba-tips-section {
+  border-top: 1px solid var(--ba-border);
+  padding-top: 1.5rem;
+}
+#budget-app .ba-tips-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 0.9rem;
+}
+#budget-app .ba-tips-header h2 {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ba-muted);
+  display: flex; align-items: center; gap: 0.45rem;
+  margin: 0;
+}
+#budget-app .ba-tip-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 0.2em 0.7em;
+  border-radius: 99px; letter-spacing: 0.06em; text-transform: uppercase;
+  transition: all 0.3s;
+}
+#budget-app .ba-tip-badge.ba-needs   { background: rgba(99,102,241,0.15); color: #a5a8ff; border: 1px solid rgba(99,102,241,0.25); }
+#budget-app .ba-tip-badge.ba-wants   { background: rgba(236,72,153,0.15); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.25); }
+#budget-app .ba-tip-badge.ba-savings { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+#budget-app .ba-tip-badge.ba-general { background: rgba(251,191,36,0.12); color: #fcd34d; border: 1px solid rgba(251,191,36,0.2); }
+#budget-app .ba-tip-box {
+  background: var(--ba-surface2);
+  border: 1px solid var(--ba-border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem 0.9rem;
+  min-height: 82px;
+  overflow: hidden;
+}
+#budget-app .ba-tip-text {
+  font-size: 0.9rem; line-height: 1.65; color: var(--ba-text);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+#budget-app .ba-tip-text.ba-out { opacity: 0; transform: translateY(-7px); }
+#budget-app .ba-tip-progress-track {
+  height: 2px; background: var(--ba-border);
+  border-radius: 99px; margin-top: 0.85rem; overflow: hidden;
+}
+#budget-app .ba-tip-progress-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--ba-needs), var(--ba-wants));
+  animation: ba-tipBar 15s linear forwards;
+}
+#budget-app .ba-tip-nav {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-top: 0.6rem;
+}
+#budget-app .ba-tip-count { font-size: 0.68rem; color: var(--ba-muted); font-weight: 600; }
+#budget-app .ba-tip-btns { display: flex; gap: 0.35rem; }
+#budget-app .ba-tip-btn {
+  background: var(--ba-surface2) !important;
+  border: 1px solid var(--ba-border) !important;
+  color: var(--ba-muted) !important;
+  width: 28px !important; height: 28px !important;
+  border-radius: 50% !important;
+  font-size: 0.78rem !important;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+#budget-app .ba-tip-btn:hover {
+  border-color: var(--ba-needs) !important;
+  color: #c0c3ff !important;
+}
+
+/* ── Disclaimer ──────────────────────────────────────────────────────── */
+#budget-app .ba-disclaimer {
+  text-align: center; font-size: 0.72rem; color: var(--ba-muted);
+  line-height: 1.55; border-top: 1px solid var(--ba-border);
+  padding-top: 1.25rem; margin-top: 1.5rem;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+#budget-app footer {
+  width: 100%; max-width: 760px;
+  margin-top: 2.5rem; padding-bottom: 3rem;
+  text-align: center;
+  animation: ba-fadeUp 0.6s ease both;
+  animation-delay: 0.25s;
+}
+#budget-app .ba-footer-label {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ba-muted); margin-bottom: 1rem;
+}
+#budget-app .ba-apps-btn {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(236,72,153,0.15));
+  border: 1px solid rgba(99,102,241,0.35) !important;
+  color: #c0c3ff !important;
+  font-size: 0.95rem !important; font-weight: 700 !important;
+  padding: 0.85em 2em !important;
+  border-radius: 12px !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: all 0.2s;
+  letter-spacing: 0.01em;
+}
+#budget-app .ba-apps-btn:hover {
+  background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(236,72,153,0.25));
+  border-color: rgba(99,102,241,0.6) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(99,102,241,0.2);
+}
+#budget-app .ba-apps-btn .ba-arrow { transition: transform 0.2s; }
+#budget-app .ba-apps-btn:hover .ba-arrow { transform: translateX(4px); }
+#budget-app .ba-footer-copy {
+  font-size: 0.7rem; color: var(--ba-muted);
+  margin-top: 2rem; padding-top: 1.25rem;
+  border-top: 1px solid var(--ba-border);
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────── */
+@keyframes ba-fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ba-fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ba-tipBar {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+@keyframes ba-pulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+#budget-app .ba-pulse { animation: ba-pulse 0.35s ease; }
   </style>
 </head>
+
 <body>
+<div id="budget-app">
+  <div class="ba-glow" aria-hidden="true"></div>
 
-<!-- Country Selector -->
-<div class="country-bar">
-  <label for="countrySelect">Country</label>
-  <div class="country-select-wrap">
-    <span class="flag-display" id="flagDisplay">🇵🇰</span>
-    <select id="countrySelect"></select>
+  <!-- Country Selector -->
+  <div class="ba-country-bar">
+    <label for="ba-country">Country</label>
+    <div class="ba-select-wrap">
+      <span class="ba-flag" id="ba-flag">🇵🇰</span>
+      <select id="ba-country"></select>
+    </div>
+    <span class="ba-currency-tag" id="ba-cur-tag">PKR</span>
   </div>
-  <span class="currency-tag" id="currencyTag">PKR</span>
+
+  <header>
+    <div class="ba-badge">Financial Planning Tool</div>
+    <h1>50 / 30 / 20<br>Budget Splitter</h1>
+    <p>Enter your take-home income and instantly see your ideal budget breakdown.</p>
+  </header>
+
+  <div class="ba-card">
+
+    <!-- Income -->
+    <div class="ba-income-section">
+      <label for="ba-income">Monthly Take-Home Income</label>
+      <div class="ba-input-wrap">
+        <span class="ba-currency-pfx" id="ba-pfx">₨</span>
+        <input id="ba-income" type="number" min="0" value="80000" placeholder="80000" />
+      </div>
+      <div class="ba-freq-row">
+        <button class="ba-freq-btn ba-active" data-freq="monthly">Monthly</button>
+        <button class="ba-freq-btn" data-freq="weekly">Weekly</button>
+        <button class="ba-freq-btn" data-freq="annual">Annual</button>
+      </div>
+    </div>
+
+    <!-- Donut (Chart.js) -->
+    <div class="ba-chart-area">
+      <div class="ba-donut-wrap">
+        <canvas id="ba-donut" width="210" height="210"></canvas>
+      </div>
+    </div>
+
+    <!-- Buckets -->
+    <div class="ba-buckets">
+      <div class="ba-bucket ba-needs">
+        <div class="ba-bucket-title"><span class="ba-dot"></span>Needs</div>
+        <div class="ba-bucket-pct" id="ba-n-pct">50%</div>
+        <div class="ba-bucket-amount" id="ba-n-amt">₨40,000</div>
+        <div class="ba-bucket-desc">Rent · Groceries · Utilities · Insurance</div>
+        <div class="ba-bar-track"><div class="ba-bar-fill" id="ba-n-bar" style="width:50%"></div></div>
+      </div>
+      <div class="ba-bucket ba-wants">
+        <div class="ba-bucket-title"><span class="ba-dot"></span>Wants</div>
+        <div class="ba-bucket-pct" id="ba-w-pct">30%</div>
+        <div class="ba-bucket-amount" id="ba-w-amt">₨24,000</div>
+        <div class="ba-bucket-desc">Dining · Entertainment · Hobbies</div>
+        <div class="ba-bar-track"><div class="ba-bar-fill" id="ba-w-bar" style="width:30%"></div></div>
+      </div>
+      <div class="ba-bucket ba-savings">
+        <div class="ba-bucket-title"><span class="ba-dot"></span>Savings</div>
+        <div class="ba-bucket-pct" id="ba-s-pct">20%</div>
+        <div class="ba-bucket-amount" id="ba-s-amt">₨16,000</div>
+        <div class="ba-bucket-desc">Emergency Fund · Investments · Debt</div>
+        <div class="ba-bar-track"><div class="ba-bar-fill" id="ba-s-bar" style="width:20%"></div></div>
+      </div>
+    </div>
+
+    <!-- Sliders -->
+    <div class="ba-sliders-section">
+      <h2>Customize Ratios</h2>
+      <div class="ba-slider-row">
+        <div class="ba-sl-label"><span class="ba-dot" style="background:var(--ba-needs)"></span>Needs</div>
+        <input id="ba-sl-needs" type="range" min="0" max="100" value="50" />
+        <div class="ba-sl-value" id="ba-sl-nv" style="color:#a5a8ff">50%</div>
+      </div>
+      <div class="ba-slider-row">
+        <div class="ba-sl-label"><span class="ba-dot" style="background:var(--ba-wants)"></span>Wants</div>
+        <input id="ba-sl-wants" type="range" min="0" max="100" value="30" />
+        <div class="ba-sl-value" id="ba-sl-wv" style="color:#f9a8d4">30%</div>
+      </div>
+      <div class="ba-slider-row">
+        <div class="ba-sl-label"><span class="ba-dot" style="background:var(--ba-savings)"></span>Savings</div>
+        <input id="ba-sl-savings" type="range" min="0" max="100" value="20" />
+        <div class="ba-sl-value" id="ba-sl-sv" style="color:#6ee7b7">20%</div>
+      </div>
+      <div class="ba-sum-row">
+        <button class="ba-reset-btn" id="ba-reset">Reset to 50/30/20</button>
+        <span>Total:</span>
+        <span class="ba-sum-badge" id="ba-sum">100%</span>
+      </div>
+    </div>
+
+    <!-- Projection -->
+    <div class="ba-projection">
+      <div class="ba-proj-item">📅 <span>Annual needs: <strong id="ba-pn">₨480,000</strong></span></div>
+      <div class="ba-proj-item">🎉 <span>Annual wants: <strong id="ba-pw">₨288,000</strong></span></div>
+      <div class="ba-proj-item">💰 <span>Annual savings: <strong id="ba-ps">₨192,000</strong></span></div>
+    </div>
+
+    <!-- Tips -->
+    <div class="ba-tips-section">
+      <div class="ba-tips-header">
+        <h2><span>💡</span> Financial Tip</h2>
+        <span class="ba-tip-badge ba-general" id="ba-tip-badge">General</span>
+      </div>
+      <div class="ba-tip-box">
+        <div class="ba-tip-text" id="ba-tip-text">Loading your personalised tip…</div>
+        <div class="ba-tip-progress-track">
+          <div class="ba-tip-progress-fill" id="ba-tip-prog"></div>
+        </div>
+      </div>
+      <div class="ba-tip-nav">
+        <span class="ba-tip-count" id="ba-tip-count">Tip 1 of 1</span>
+        <div class="ba-tip-btns">
+          <button class="ba-tip-btn" id="ba-tip-prev">&#8592;</button>
+          <button class="ba-tip-btn" id="ba-tip-next">&#8594;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ba-disclaimer">
+      This tool is for educational purposes only and does not constitute personalised financial advice.<br>
+      Your optimal split may vary based on your cost of living, debt load, and goals.
+    </div>
+  </div>
+
+  <footer>
+    <div class="ba-footer-label">Our Other Apps</div>
+    <a href="apps.html" class="ba-apps-btn">Explore All Apps <span class="ba-arrow">→</span></a>
+    <div class="ba-footer-copy">© 2025 Budget Tools · Educational use only · Not financial advice</div>
+  </footer>
 </div>
-
-<header>
-  <div class="badge">Financial Planning Tool</div>
-  <h1>50 / 30 / 20<br>Budget Splitter</h1>
-  <p>Enter your take-home income and instantly see your ideal budget breakdown.</p>
-</header>
-
-<div class="card">
-
-  <div class="income-section">
-    <label for="income">Monthly Take-Home Income</label>
-    <div class="input-wrap">
-      <span class="currency-prefix" id="currencyPrefix">₨</span>
-      <input id="income" type="number" min="0" placeholder="80000" value="80000" />
-    </div>
-    <div class="freq-row">
-      <button class="freq-btn active" data-freq="monthly">Monthly</button>
-      <button class="freq-btn" data-freq="weekly">Weekly</button>
-      <button class="freq-btn" data-freq="annual">Annual</button>
-    </div>
-  </div>
-
-  <div class="chart-area">
-    <div class="donut-container">
-      <svg id="donutChart" width="200" height="200" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="80" fill="none" stroke="#1e1e38" stroke-width="28"/>
-        <circle id="ringSavings" cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="28"/>
-        <circle id="ringWants"   cx="100" cy="100" r="80" fill="none" stroke="#ec4899" stroke-width="28"/>
-        <circle id="ringNeeds"   cx="100" cy="100" r="80" fill="none" stroke="#6366f1" stroke-width="28"/>
-      </svg>
-      <div class="donut-center">
-        <span class="dc-label" id="dcLabel">Monthly</span>
-        <span class="dc-amount" id="dcTotal">₨80,000</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="buckets">
-    <div class="bucket needs">
-      <div class="bucket-title"><span class="dot"></span>Needs</div>
-      <div class="bucket-pct" id="needsPct">50%</div>
-      <div class="bucket-amount" id="needsAmt">₨40,000</div>
-      <div class="bucket-desc">Rent · Groceries · Utilities · Insurance</div>
-      <div class="bar-track"><div class="bar-fill" id="needsBar" style="width:50%"></div></div>
-    </div>
-    <div class="bucket wants">
-      <div class="bucket-title"><span class="dot"></span>Wants</div>
-      <div class="bucket-pct" id="wantsPct">30%</div>
-      <div class="bucket-amount" id="wantsAmt">₨24,000</div>
-      <div class="bucket-desc">Dining · Entertainment · Hobbies</div>
-      <div class="bar-track"><div class="bar-fill" id="wantsBar" style="width:30%"></div></div>
-    </div>
-    <div class="bucket savings">
-      <div class="bucket-title"><span class="dot"></span>Savings</div>
-      <div class="bucket-pct" id="savingsPct">20%</div>
-      <div class="bucket-amount" id="savingsAmt">₨16,000</div>
-      <div class="bucket-desc">Emergency Fund · Investments · Debt</div>
-      <div class="bar-track"><div class="bar-fill" id="savingsBar" style="width:20%"></div></div>
-    </div>
-  </div>
-
-  <div class="sliders-section">
-    <h2>Customize Ratios</h2>
-    <div class="slider-row">
-      <div class="sl-label"><span class="dot" style="background:var(--needs)"></span>Needs</div>
-      <input id="slNeeds" type="range" min="0" max="100" value="50" />
-      <div class="sl-value" id="slNeedsVal" style="color:#a5a8ff">50%</div>
-    </div>
-    <div class="slider-row">
-      <div class="sl-label"><span class="dot" style="background:var(--wants)"></span>Wants</div>
-      <input id="slWants" type="range" min="0" max="100" value="30" />
-      <div class="sl-value" id="slWantsVal" style="color:#f9a8d4">30%</div>
-    </div>
-    <div class="slider-row">
-      <div class="sl-label"><span class="dot" style="background:var(--savings)"></span>Savings</div>
-      <input id="slSavings" type="range" min="0" max="100" value="20" />
-      <div class="sl-value" id="slSavingsVal" style="color:#6ee7b7">20%</div>
-    </div>
-    <div class="sum-row">
-      <button class="reset-btn" id="resetBtn">Reset to 50/30/20</button>
-      <span>Total:</span>
-      <span class="sum-badge" id="sumBadge">100%</span>
-    </div>
-  </div>
-
-  <div class="projection">
-    <div class="proj-item">📅 <span>Annual needs: <strong id="projNeeds">₨480,000</strong></span></div>
-    <div class="proj-item">🎉 <span>Annual wants: <strong id="projWants">₨288,000</strong></span></div>
-    <div class="proj-item">💰 <span>Annual savings: <strong id="projSavings">₨192,000</strong></span></div>
-  </div>
-
-  <div class="tips-section">
-    <div class="tips-header">
-      <h2><span>💡</span> Financial Tip</h2>
-      <span class="tip-category-badge general" id="tipBadge">General</span>
-    </div>
-    <div class="tip-box">
-      <div class="tip-text fade-in" id="tipText">Loading your personalised tip…</div>
-      <div class="tip-progress-track">
-        <div class="tip-progress-fill" id="tipProgress"></div>
-      </div>
-    </div>
-    <div class="tip-nav">
-      <span class="tip-count" id="tipCount">Tip 1 of 1</span>
-      <div class="tip-btns">
-        <button class="tip-btn" id="tipPrev">&#8592;</button>
-        <button class="tip-btn" id="tipNext">&#8594;</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="disclaimer">
-    This tool is for educational purposes only and does not constitute personalised financial advice.<br>
-    Your optimal split may vary based on your cost of living, debt load, and goals.
-  </div>
-
-</div>
-
-<footer>
-  <div class="footer-label">Our Other Apps</div>
-  <a href="apps.html" class="view-apps-btn">
-    Explore All Apps <span class="arrow">→</span>
-  </a>
-  <div class="footer-copy">© 2025 Budget Tools · Educational use only · Not financial advice</div>
-</footer>
 
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
-// COUNTRIES
-// ─────────────────────────────────────────────────────────────────────────────
-const COUNTRIES = [
-  { code:'PK', name:'Pakistan',        currency:'PKR', symbol:'₨',    flag:'🇵🇰', income:80000,    decimals:0 },
-  { code:'US', name:'United States',   currency:'USD', symbol:'$',    flag:'🇺🇸', income:5000,     decimals:0 },
-  { code:'GB', name:'United Kingdom',  currency:'GBP', symbol:'£',    flag:'🇬🇧', income:3500,     decimals:0 },
-  { code:'EU', name:'Euro Zone',       currency:'EUR', symbol:'€',    flag:'🇪🇺', income:3500,     decimals:0 },
-  { code:'IN', name:'India',           currency:'INR', symbol:'₹',    flag:'🇮🇳', income:50000,    decimals:0 },
-  { code:'CA', name:'Canada',          currency:'CAD', symbol:'C$',   flag:'🇨🇦', income:5500,     decimals:0 },
-  { code:'AU', name:'Australia',       currency:'AUD', symbol:'A$',   flag:'🇦🇺', income:6000,     decimals:0 },
-  { code:'AE', name:'UAE',             currency:'AED', symbol:'AED',  flag:'🇦🇪', income:15000,    decimals:0 },
-  { code:'SA', name:'Saudi Arabia',    currency:'SAR', symbol:'SAR',  flag:'🇸🇦', income:12000,    decimals:0 },
-  { code:'TR', name:'Turkey',          currency:'TRY', symbol:'₺',    flag:'🇹🇷', income:25000,    decimals:0 },
-  { code:'BD', name:'Bangladesh',      currency:'BDT', symbol:'৳',    flag:'🇧🇩', income:40000,    decimals:0 },
-  { code:'CN', name:'China',           currency:'CNY', symbol:'¥',    flag:'🇨🇳', income:12000,    decimals:0 },
-  { code:'JP', name:'Japan',           currency:'JPY', symbol:'¥',    flag:'🇯🇵', income:350000,   decimals:0 },
-  { code:'KR', name:'South Korea',     currency:'KRW', symbol:'₩',    flag:'🇰🇷', income:3500000,  decimals:0 },
-  { code:'MY', name:'Malaysia',        currency:'MYR', symbol:'RM',   flag:'🇲🇾', income:6000,     decimals:0 },
-  { code:'SG', name:'Singapore',       currency:'SGD', symbol:'S$',   flag:'🇸🇬', income:6000,     decimals:0 },
-  { code:'ID', name:'Indonesia',       currency:'IDR', symbol:'Rp',   flag:'🇮🇩', income:8000000,  decimals:0 },
-  { code:'PH', name:'Philippines',     currency:'PHP', symbol:'₱',    flag:'🇵🇭', income:30000,    decimals:0 },
-  { code:'TH', name:'Thailand',        currency:'THB', symbol:'฿',    flag:'🇹🇭', income:25000,    decimals:0 },
-  { code:'VN', name:'Vietnam',         currency:'VND', symbol:'₫',    flag:'🇻🇳', income:15000000, decimals:0 },
-  { code:'NG', name:'Nigeria',         currency:'NGN', symbol:'₦',    flag:'🇳🇬', income:200000,   decimals:0 },
-  { code:'EG', name:'Egypt',           currency:'EGP', symbol:'E£',   flag:'🇪🇬', income:15000,    decimals:0 },
-  { code:'KE', name:'Kenya',           currency:'KES', symbol:'KSh',  flag:'🇰🇪', income:50000,    decimals:0 },
-  { code:'GH', name:'Ghana',           currency:'GHS', symbol:'GH₵',  flag:'🇬🇭', income:3000,     decimals:0 },
-  { code:'ZA', name:'South Africa',    currency:'ZAR', symbol:'R',    flag:'🇿🇦', income:25000,    decimals:0 },
-  { code:'BR', name:'Brazil',          currency:'BRL', symbol:'R$',   flag:'🇧🇷', income:5000,     decimals:0 },
-  { code:'MX', name:'Mexico',          currency:'MXN', symbol:'MX$',  flag:'🇲🇽', income:20000,    decimals:0 },
-  { code:'RU', name:'Russia',          currency:'RUB', symbol:'₽',    flag:'🇷🇺', income:60000,    decimals:0 },
-  { code:'AR', name:'Argentina',       currency:'ARS', symbol:'AR$',  flag:'🇦🇷', income:200000,   decimals:0 },
-  { code:'OM', name:'Oman',            currency:'OMR', symbol:'OMR',  flag:'🇴🇲', income:1500,     decimals:0 },
-];
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUDGET SPLITTER — fully isolated IIFE
+   No global variables except the Chart.js instance stored on the canvas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────────────────────────────────────
-let currentCountry = COUNTRIES[0]; // Pakistan default
-let rawIncome = currentCountry.income;
-let freq = 'monthly';
-let ratios = { needs: 50, wants: 30, savings: 20 };
-const toMonthly = { monthly: 1, weekly: 4.333, annual: 1/12 };
-const freqLabel  = { monthly: 'Monthly', weekly: 'Weekly', annual: 'Annual' };
+  /* ── Guard: run only once ─────────────────────────────────────────────── */
+  var ROOT = document.getElementById('budget-app');
+  if (!ROOT || ROOT.dataset.baInit) return;
+  ROOT.dataset.baInit = '1';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DOM
-// ─────────────────────────────────────────────────────────────────────────────
-const incomeEl      = document.getElementById('income');
-const dcTotal       = document.getElementById('dcTotal');
-const dcLabelEl     = document.getElementById('dcLabel');
-const needsPct      = document.getElementById('needsPct');
-const wantsPct      = document.getElementById('wantsPct');
-const savingsPct    = document.getElementById('savingsPct');
-const needsAmt      = document.getElementById('needsAmt');
-const wantsAmt      = document.getElementById('wantsAmt');
-const savingsAmt    = document.getElementById('savingsAmt');
-const needsBar      = document.getElementById('needsBar');
-const wantsBar      = document.getElementById('wantsBar');
-const savingsBar    = document.getElementById('savingsBar');
-const projNeeds     = document.getElementById('projNeeds');
-const projWants     = document.getElementById('projWants');
-const projSavings   = document.getElementById('projSavings');
-const slNeeds       = document.getElementById('slNeeds');
-const slWants       = document.getElementById('slWants');
-const slSavings     = document.getElementById('slSavings');
-const slNeedsVal    = document.getElementById('slNeedsVal');
-const slWantsVal    = document.getElementById('slWantsVal');
-const slSavingsVal  = document.getElementById('slSavingsVal');
-const sumBadge      = document.getElementById('sumBadge');
-const resetBtn      = document.getElementById('resetBtn');
-const currencyPfx   = document.getElementById('currencyPrefix');
-const currencyTag   = document.getElementById('currencyTag');
-const flagDisplay   = document.getElementById('flagDisplay');
-const countrySelect = document.getElementById('countrySelect');
-const ringNeeds     = document.getElementById('ringNeeds');
-const ringWants     = document.getElementById('ringWants');
-const ringSavings   = document.getElementById('ringSavings');
-const CIRC = 2 * Math.PI * 80;
+  /* ── Countries ────────────────────────────────────────────────────────── */
+  var COUNTRIES = [
+    { code:'PK', name:'Pakistan',       cur:'PKR', sym:'₨',   flag:'🇵🇰', inc:80000   },
+    { code:'US', name:'United States',  cur:'USD', sym:'$',   flag:'🇺🇸', inc:5000    },
+    { code:'GB', name:'United Kingdom', cur:'GBP', sym:'£',   flag:'🇬🇧', inc:3500    },
+    { code:'EU', name:'Euro Zone',      cur:'EUR', sym:'€',   flag:'🇪🇺', inc:3500    },
+    { code:'IN', name:'India',          cur:'INR', sym:'₹',   flag:'🇮🇳', inc:50000   },
+    { code:'CA', name:'Canada',         cur:'CAD', sym:'C$',  flag:'🇨🇦', inc:5500    },
+    { code:'AU', name:'Australia',      cur:'AUD', sym:'A$',  flag:'🇦🇺', inc:6000    },
+    { code:'AE', name:'UAE',            cur:'AED', sym:'AED ', flag:'🇦🇪', inc:15000  },
+    { code:'SA', name:'Saudi Arabia',   cur:'SAR', sym:'SAR ', flag:'🇸🇦', inc:12000  },
+    { code:'TR', name:'Turkey',         cur:'TRY', sym:'₺',   flag:'🇹🇷', inc:25000   },
+    { code:'BD', name:'Bangladesh',     cur:'BDT', sym:'৳',   flag:'🇧🇩', inc:40000   },
+    { code:'CN', name:'China',          cur:'CNY', sym:'¥',   flag:'🇨🇳', inc:12000   },
+    { code:'JP', name:'Japan',          cur:'JPY', sym:'¥',   flag:'🇯🇵', inc:350000  },
+    { code:'KR', name:'South Korea',    cur:'KRW', sym:'₩',   flag:'🇰🇷', inc:3500000 },
+    { code:'MY', name:'Malaysia',       cur:'MYR', sym:'RM ', flag:'🇲🇾', inc:6000    },
+    { code:'SG', name:'Singapore',      cur:'SGD', sym:'S$',  flag:'🇸🇬', inc:6000    },
+    { code:'ID', name:'Indonesia',      cur:'IDR', sym:'Rp ', flag:'🇮🇩', inc:8000000 },
+    { code:'PH', name:'Philippines',    cur:'PHP', sym:'₱',   flag:'🇵🇭', inc:30000   },
+    { code:'TH', name:'Thailand',       cur:'THB', sym:'฿',   flag:'🇹🇭', inc:25000   },
+    { code:'VN', name:'Vietnam',        cur:'VND', sym:'₫',   flag:'🇻🇳', inc:15000000},
+    { code:'NG', name:'Nigeria',        cur:'NGN', sym:'₦',   flag:'🇳🇬', inc:200000  },
+    { code:'EG', name:'Egypt',          cur:'EGP', sym:'E£ ', flag:'🇪🇬', inc:15000   },
+    { code:'KE', name:'Kenya',          cur:'KES', sym:'KSh ',flag:'🇰🇪', inc:50000   },
+    { code:'GH', name:'Ghana',          cur:'GHS', sym:'GH₵ ',flag:'🇬🇭', inc:3000    },
+    { code:'ZA', name:'South Africa',   cur:'ZAR', sym:'R ',  flag:'🇿🇦', inc:25000   },
+    { code:'BR', name:'Brazil',         cur:'BRL', sym:'R$',  flag:'🇧🇷', inc:5000    },
+    { code:'MX', name:'Mexico',         cur:'MXN', sym:'MX$', flag:'🇲🇽', inc:20000   },
+    { code:'RU', name:'Russia',         cur:'RUB', sym:'₽',   flag:'🇷🇺', inc:60000   },
+    { code:'AR', name:'Argentina',      cur:'ARS', sym:'AR$', flag:'🇦🇷', inc:200000  },
+    { code:'OM', name:'Oman',           cur:'OMR', sym:'OMR ',flag:'🇴🇲', inc:1500    }
+  ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COUNTRY SELECTOR BUILD
-// ─────────────────────────────────────────────────────────────────────────────
-COUNTRIES.forEach((c, i) => {
-  const opt = document.createElement('option');
-  opt.value = i;
-  opt.textContent = `${c.name} (${c.currency})`;
-  if (i === 0) opt.selected = true;
-  countrySelect.appendChild(opt);
-});
+  /* ── Tips database ────────────────────────────────────────────────────── */
+  var TIPS = {
+    needs: [
+      "Negotiate your rent annually — even a 5% reduction saves thousands per year.",
+      "Bundle home, auto, and life insurance with one provider for multi-policy discounts.",
+      "Shop at discount grocers — studies show 20–40% savings vs. name brands.",
+      "Meal prep weekly to cut grocery waste by up to 30%.",
+      "Install a smart thermostat — households save significantly on energy bills.",
+      "Use generic pharmacy programs — cut prescription costs by 80%+.",
+      "Cancel unused gym memberships and replace with free YouTube workouts.",
+      "Downsize your vehicle — a lower car payment saves thousands per year.",
+      "Drop collision coverage on cars worth less than 10× the annual premium.",
+      "Use a library card for books, audiobooks, and magazines — all free.",
+      "Line-dry clothes instead of a dryer — saves significantly on electricity.",
+      "Use cold water for laundry — 90% of washer energy goes to heating water.",
+      "Unplug devices when not in use — phantom load adds up.",
+      "Use cash-back apps on every grocery trip.",
+      "Compare insurance rates every renewal — loyalty rarely pays.",
+      "Cook double portions and freeze — saves both time and future food costs.",
+      "Drink filtered tap water — costs 300× less than bottled.",
+      "Buy store-brand medications — regulators require identical active ingredients.",
+      "Carpool or use park-and-ride to cut commuting costs by 50%.",
+      "Ask your landlord for a longer lease in exchange for a rent freeze.",
+      "Switch to a credit union — lower fees and better rates than commercial banks.",
+      "Contact service providers to ask for loyalty discounts — most have retention offers.",
+      "Use LED bulbs — 75% less energy and lasting 25× longer.",
+      "Make coffee at home — saves significant money vs. buying daily.",
+      "Use telehealth for minor ailments — often saves co-pay and travel time.",
+      "Reduce meat 2 days/week — saves meaningfully on groceries.",
+      "Plant-based proteins cost a fraction of the price of beef.",
+      "Time your shopping to clearance hours — usually evenings and Sunday mornings.",
+      "Consider house hacking — renting a room covers part of your mortgage.",
+      "Use cash-back credit card for necessities — pay in full every month.",
+      "Install low-flow showerheads — save thousands of litres of water per year.",
+      "Seal windows and doors with weatherstripping — can reduce heating costs 15%.",
+      "Pay biweekly on your mortgage — makes 1 extra payment per year.",
+      "Compare utility providers annually — switching saves real money.",
+      "Shop at ethnic grocery stores for produce and spices — often 50% cheaper.",
+      "Buy in bulk for non-perishables on sale — rice, pasta, oil, toiletries.",
+      "Grow herbs and easy vegetables at home.",
+      "Use a SIM-only phone plan — often 70% cheaper than bundled contracts.",
+      "Audit subscriptions quarterly — cancel anything unused for 30+ days.",
+      "Raise insurance deductibles and bank the premium savings instead.",
+      "Use a comparison website for utilities, insurance, and mobile annually.",
+      "Look into government assistance programs available in your country.",
+      "Use public transportation even once a week to cut monthly transport costs.",
+      "Negotiate medical bills — hospitals often have financial assistance programs.",
+      "Buy a slow cooker — turns cheap cuts into gourmet meals for very little.",
+      "Plan meals around what's on sale each week, not around cravings.",
+      "Use cashback portals before any online purchase — often 3–10% back.",
+      "Learn basic car maintenance — saves service-centre markups.",
+      "Use free preventive health screenings covered by public health programs.",
+      "Apply for every tax relief and rebate available in your country — they add up."
+    ],
+    wants: [
+      "Implement a 48-hour rule before buying anything over a certain amount — impulse fades.",
+      "Delete shopping apps from your phone — out of sight, out of cart.",
+      "Unsubscribe from retail email lists to remove temptation.",
+      "Use a dedicated 'wants' debit card preloaded each month — when it's gone, it's gone.",
+      "Cook restaurant-quality meals at home — YouTube has incredible tutorials.",
+      "Host a potluck instead of going out — same social experience at a fraction of cost.",
+      "Do a 'no-spend weekend' once a month — it resets your money relationship.",
+      "Borrow books, DVDs, and games from the library instead of buying.",
+      "Rotate streaming services — keep one for 3 months, swap to another.",
+      "Make your own cocktails at home — far cheaper than bar prices.",
+      "Shop end-of-season sales for clothing — 50–70% off next year's wardrobe.",
+      "Use secondhand marketplaces instead of buying new.",
+      "Set a gift budget per person per year — experiences over things.",
+      "Try 'experience gifts' — cooking class, concert, hike — richer than objects.",
+      "Check if museums and attractions have free admission days — many do.",
+      "Buy used electronics — last year's models cost 40–60% less and work identically.",
+      "Use a cashback portal before buying anything online.",
+      "Set a 'splurge once a month' ritual — one deliberate luxury beats random indulgences.",
+      "Cancel subscriptions with fees you forgot — audit your bank statement monthly.",
+      "Switch to a hobby that builds skills — cooking, gardening, coding.",
+      "Check for free concerts, festivals, and outdoor events in your city.",
+      "Try 'Project 333' wardrobe challenge — discover you need far less than you think.",
+      "Use the envelope method for discretionary spending — physical cash creates friction.",
+      "Put wants spending on a 30-day list — things dropped before day 30 weren't real wants.",
+      "Try a 'no restaurant month' once a year — cook everything.",
+      "Buy tech one generation behind — last year's flagship is 40% cheaper.",
+      "Split costs on gifts, group subscriptions, or experiences with friends.",
+      "Review your wants log monthly and ask: 'Was this worth it?'",
+      "Identify your top 3 genuine wants and fund those. Cut the rest ruthlessly.",
+      "Use meal prep to resist expensive convenience food on busy days.",
+      "Try 'conscious consumption' — buying the thing or the feeling?",
+      "Apply 'one-in-one-out' rule for clothing and electronics.",
+      "Give experiences instead of gifts at holidays — saves money and creates memories.",
+      "Use loyalty programmes strategically — one hotel chain, one airline.",
+      "Try a staycation — explore your own city like a tourist.",
+      "Use a monthly discretionary spending review to spot categories that crept up.",
+      "Seek out free community events — movie nights, markets, concerts in the park.",
+      "Make a game of finding the best free or cheap version of something you love.",
+      "Recognise FOMO spending — most 'limited time' offers return. Don't rush.",
+      "Invest in one high-quality item you use daily instead of several cheap ones.",
+      "Compare cost-per-use before every entertainment purchase.",
+      "Choose a cheap hobby you can do daily — journaling, photography, chess.",
+      "Cancel a subscription today — just one — and observe whether you miss it.",
+      "Seek 'experience over stuff' — memories outlast objects.",
+      "Compare what an hour of work buys before a large purchase — creates perspective.",
+      "Plan one great experience per month rather than many forgettable small ones.",
+      "Learn to cook one dish really well — it replaces a restaurant meal every week.",
+      "Volunteer at events — usually get free entry in exchange.",
+      "Pay for wants with a debit card, never a credit card, to stay in budget.",
+      "Track every wants purchase for one month with zero judgment — data is enlightening."
+    ],
+    savings: [
+      "Automate your savings on payday — you can't spend what you never see.",
+      "Save your next raise entirely — lifestyle inflation is the #1 wealth killer.",
+      "Build a 3–6 month emergency fund before investing in anything else.",
+      "Use a high-yield savings account — rates often 10–20× higher than standard accounts.",
+      "Max your employer's pension or retirement match first — it's an instant 50–100% return.",
+      "Save windfalls (tax refunds, bonuses) before spending — deposit first, decide later.",
+      "Use pay-yourself-first — savings transfer happens before bills.",
+      "Increase your savings rate by 1% every year — you'll barely notice.",
+      "Micro-save using mobile apps — small amounts compound fast.",
+      "Set up sinking funds for predictable expenses: car repair, holidays, travel.",
+      "Calculate your savings rate monthly — it's more important than your income.",
+      "Aim for a 25% savings rate long-term — it unlocks financial independence in ~32 years.",
+      "Invest in index funds for long-term savings — low cost, diversified, time-tested.",
+      "Start saving for retirement as early as possible — every decade of delay costs enormously.",
+      "Never cash out a retirement account when changing jobs — roll it over instead.",
+      "Use dollar-cost averaging — invest the same amount monthly regardless of market conditions.",
+      "Avoid timing the market — time in the market beats timing the market, always.",
+      "Rebalance your portfolio annually to maintain your target asset allocation.",
+      "Use low-cost index funds — expense ratios matter enormously over decades.",
+      "Track your net worth monthly — watching it grow is the best motivation.",
+      "Invest in yourself: one professional certification can increase income significantly.",
+      "Avoid lifestyle inflation: bank 50% of every raise instead of spending it.",
+      "Understand the 4% rule: you can retire when savings = 25× annual expenses.",
+      "Reinvest all dividends automatically — they compound and become a major return source.",
+      "Avoid high-fee financial advisors — a 1% fee costs enormously over decades.",
+      "Never carry a credit card balance — interest rates erase any investment gains.",
+      "Pay off high-interest debt before investing in the market.",
+      "Build your credit score — a good score saves money on loans and insurance.",
+      "Save your car payment after paying it off — you're already used to the expense.",
+      "Know your 'FI number': annual expenses × 25. That's your retirement target.",
+      "Keep investment costs under 0.2% annually — fees are the silent wealth killer.",
+      "Review and optimise your tax situation annually — taxes are your largest expense.",
+      "Build multiple income streams — a single income is a single point of failure.",
+      "Read one personal finance book per quarter — knowledge compounds too.",
+      "Make your savings rate your identity, not your income level.",
+      "Review beneficiaries on all accounts annually — they often get forgotten.",
+      "Build a will and estate plan — ensures savings goes exactly where you intend.",
+      "The best savings advice: start today. Every day of delay costs compound interest.",
+      "Understand your pension or provident fund rules — many leave money on the table.",
+      "Consider real estate as a savings vehicle if property rights are strong in your country.",
+      "Use government-backed savings schemes if available — often tax-advantaged.",
+      "Automate annual contributions to retirement accounts early in the year.",
+      "Keep emergency savings in a separate bank — out of sight, out of reach.",
+      "Prioritise saving over investing until you have 3 months of expenses saved.",
+      "Build a strong savings habit now — it gets easier, not harder, over time.",
+      "Celebrate every savings milestone — first significant amount saved, first investment made.",
+      "Never stop saving, even during tough months — even a tiny amount maintains the habit.",
+      "Understand the concept of 'enough' — knowing your target makes saving feel achievable.",
+      "Use automatic savings to remove willpower from the equation entirely.",
+      "A small consistent savings habit started today is worth more than a large one started later."
+    ],
+    income_low: [
+      "Even very small amounts invested consistently for decades create significant wealth.",
+      "Track every currency unit when income is tight — awareness is your most powerful tool.",
+      "Apply for every government benefit you're entitled to — many go unclaimed.",
+      "Use free tax preparation services to ensure you claim every credit.",
+      "Build your first small emergency fund before anything else — it breaks the debt cycle.",
+      "Use local food banks, pantries, and community resources.",
+      "Side gigs can add meaningful income with relatively few hours per week.",
+      "Sell unused items online — most homes have significant value in sellable goods.",
+      "Negotiate medical and utility bills — payment plans are almost always available.",
+      "Learn a high-demand skill for free — many platforms offer free certificates.",
+      "Use cashback apps on every purchase — small amounts add up.",
+      "Look into employer tuition reimbursement programmes to upskill at no personal cost.",
+      "Prioritise eliminating high-interest debt — it's a guaranteed return equal to the rate.",
+      "Use a zero-based budget — assign every currency unit a job.",
+      "Ask about a pay advance or earned wage access before using expensive credit.",
+      "Reduce subscription spending to zero during tight months.",
+      "Grow a small container garden for herbs and vegetables.",
+      "Use public transportation — owning a car costs far more than most people realise.",
+      "Avoid payday loans entirely — effective interest rates are extremely high.",
+      "Use buy-nothing groups for furniture, clothing, and household items.",
+      "Negotiate a payment plan for overdue bills — creditors prefer it to default.",
+      "Look into microfinance options if starting a small business.",
+      "Apply for every scholarship and grant available for education.",
+      "Use public libraries for all entertainment, education, and internet access.",
+      "Cook from scratch — processed food costs far more per calorie.",
+      "Use a prepaid mobile plan — no contract, no bill shock.",
+      "Claim every work-related expense as a tax deduction where applicable.",
+      "Look into government start-up grants if you have a business idea.",
+      "Prioritise sleep and health — prevention is far cheaper than treatment.",
+      "Remember: tight budgets require creativity. Many wealthy people started here."
+    ],
+    income_high: [
+      "With high income, your savings rate matters more than investment returns.",
+      "Max every tax-advantaged account before investing in taxable accounts.",
+      "At high income, tax optimisation becomes more valuable than expense cutting.",
+      "Hire a fee-only fiduciary financial planner — not a commission-based advisor.",
+      "Use charitable giving vehicles to batch donations and maximise deductions.",
+      "Invest in low-cost index funds even with high income — simple wins.",
+      "Understand estate planning — wills, trusts, and beneficiary designations.",
+      "Consider umbrella insurance — protects high-value assets from liability.",
+      "Avoid lifestyle inflation — it's the primary reason high earners aren't wealthy.",
+      "Consider disability insurance — your income is your greatest asset.",
+      "Build a team: accountant, estate attorney, financial planner.",
+      "Invest in international diversification — home country is a single-country bet.",
+      "Consider real estate for passive income and tax benefits.",
+      "Build your FI number — at high income you can reach independence much faster.",
+      "Diversify concentrated stock positions — don't hold more than 5% in one stock.",
+      "Review asset allocation for risk as wealth grows.",
+      "Give equity to children's accounts — transfers wealth tax-efficiently.",
+      "Max all available pension and retirement contributions before taxable investing.",
+      "Consider tax-exempt bonds for income at higher brackets.",
+      "Use loss harvesting in your investment portfolio annually.",
+      "Build a financial model for early retirement — more achievable than you think.",
+      "Create a legacy plan: will, trust, beneficiary designations, and power of attorney.",
+      "Use a good accountant — at high income, expert advice pays for itself.",
+      "Invest in skills that compound with your career: leadership, sales, communication.",
+      "Track net worth quarterly — at high income, trajectory matters most.",
+      "Build generational wealth: invest in your children's financial education.",
+      "Benchmark your savings rate against your income — high earners should save aggressively.",
+      "Give generously — it increases wellbeing and often creates tax benefits.",
+      "Fund education accounts early — compound growth makes a huge difference.",
+      "Remember: high income without savings discipline leads to the same outcome as low income."
+    ],
+    general: [
+      "Write down your top 3 financial goals. Goals without paper are just wishes.",
+      "Review your budget every single month — life changes, your plan should too.",
+      "Understand the difference between an asset and a liability. Buy more assets.",
+      "Never co-sign a loan. You take 100% of the risk with 0% of the benefit.",
+      "The best investment is one you understand completely.",
+      "Compound interest works for you in investments and against you in debt.",
+      "Know your 'enough' — contentment is a superpower in personal finance.",
+      "Automate everything: savings, bill pay, investments. Remove willpower.",
+      "Money is a tool. Decide what you want to build with it.",
+      "'Rich' is income. 'Wealthy' is having assets that work while you sleep.",
+      "Live below your means — it's the single most powerful financial habit.",
+      "Index funds beat the vast majority of actively managed funds over 10+ years.",
+      "Your biggest financial risk is often your own behaviour during downturns.",
+      "Compare prices without guilt — it's not cheap, it's intelligent.",
+      "Set a 'financial date' with your partner monthly — money talks prevent fights.",
+      "Diversification is the only free lunch in investing.",
+      "Inflation is a silent tax — your savings must grow faster than inflation.",
+      "Don't time the market; time in the market is the strategy that works.",
+      "Delay large purchases by 1 month — the need often disappears.",
+      "Understand your financial 'why' — motivation needs a purpose to be sustainable.",
+      "The best time to plant a financial tree was 10 years ago. The second best is today.",
+      "Wealth is built in boring increments, not exciting moments.",
+      "Don't compare your situation to others' — you see their highlight reel.",
+      "Financial literacy is a skill. Study it like any other valuable skill.",
+      "Keep a 'money journal' — write about your spending feelings once a week.",
+      "Money can buy freedom. That's the most valuable thing it can buy.",
+      "Know your hourly rate — it changes how you value both time and purchases.",
+      "The goal of budgeting is not restriction — it's intentionality.",
+      "Small, consistent actions beat large, irregular ones in personal finance.",
+      "Budgeting is not a punishment — it's a plan for the life you want.",
+      "Every currency unit has a job. Give it instructions, or it will spend itself.",
+      "Financial stress is a leading cause of relationship conflict. Communicate openly.",
+      "Ask for raises — the biggest income jump most people get is from changing jobs.",
+      "Build multiple income streams — a single income is a single point of failure.",
+      "Generosity and financial health aren't opposites — giving is part of the mindset.",
+      "Teach your children about money — it isn't in most school curricula.",
+      "The best savings account is the one you actually use consistently.",
+      "Use a simple net worth spreadsheet and update it monthly.",
+      "Your financial plan should reflect your values, not society's expectations.",
+      "Wealth is not about income — it's about the gap between earn and spend.",
+      "A good budget has room for fun. A budget you hate is a budget you'll abandon.",
+      "Never let perfection stop you from starting — an imperfect budget beats none.",
+      "Financial confidence is built one correct decision at a time.",
+      "Know the fees on every financial product you own. Fees compound against you.",
+      "Long-term thinking is the ultimate financial superpower.",
+      "The 'latte factor' is real — small habitual expenses compound into large sums.",
+      "Reduce financial complexity — fewer accounts, fewer products, fewer decisions.",
+      "A financial emergency fund is insurance. Keep it liquid.",
+      "Think in systems, not goals — build systems that automatically improve your finances.",
+      "Never stop learning about money — the financial landscape always changes.",
+      "Spend less than you earn. Invest the difference. Wait. Repeat. That's the strategy.",
+      "Financial freedom isn't about being rich — it's about having choices.",
+      "Consistency over time beats intensity in short bursts. Save a little, always.",
+      "Don't confuse income with wealth. Many high earners are broke.",
+      "Progress, not perfection, is the measure of financial success.",
+      "Define what 'enough' looks like — without that, the goal is endless.",
+      "Your best investment: time, not just money. Start early, never stop.",
+      "The best financial tool is a budget you actually look at every week.",
+      "Small wins matter: paying off one small debt creates momentum for bigger ones.",
+      "Seek to understand before you invest — curiosity is free, ignorance can be costly.",
+      "Spend intentionally, save systematically, invest consistently. Repeat for 30 years.",
+      "Delayed gratification is a learnable skill — and one of the most valuable.",
+      "Know your net worth to the number. People who track wealth build more of it.",
+      "Every financial decision is a trade-off. Know what you're trading.",
+      "Budget for joy. A life without planned pleasure leads to unplanned overspending.",
+      "One book, one mentor, one community can transform your financial trajectory.",
+      "Your future self is depending on the choices you make today.",
+      "Financial success is built with ordinary income and extraordinary habits.",
+      "The best financial decision you can make today: start.",
+      "Review, reflect, adjust. Your budget is a living document, not a sentence.",
+      "Use your budget as a communication tool with your household — transparency builds trust.",
+      "The enemy of financial progress is inertia. Any action beats no action.",
+      "Wealth built on debt is fragile. Wealth built on savings and investment is durable.",
+      "A strong financial foundation gives you freedom to take career and life risks.",
+      "Time is the one financial resource you can never get back. Use it wisely.",
+      "Surround yourself with financially responsible people — mindsets are contagious.",
+      "Know the difference between price and value — cheap now can be expensive later.",
+      "Your spending reveals your real values — look at your bank statement as a mirror.",
+      "Master one financial habit at a time — too many at once leads to none.",
+      "Stay humble about financial projections — plan for the unexpected.",
+      "True wealth is having more time than money obligations.",
+      "Remember why you started — revisit your financial 'why' when motivation fades."
+    ]
+  };
 
-countrySelect.addEventListener('change', () => {
-  currentCountry = COUNTRIES[parseInt(countrySelect.value)];
-  flagDisplay.textContent  = currentCountry.flag;
-  currencyPfx.textContent  = currentCountry.symbol;
-  currencyTag.textContent  = currentCountry.currency;
-  rawIncome = currentCountry.income;
-  incomeEl.value = rawIncome;
+  /* ── State ────────────────────────────────────────────────────────────── */
+  var country = COUNTRIES[0];
+  var rawIncome = country.inc;
+  var freq = 'monthly';
+  var ratios = { needs: 50, wants: 30, savings: 20 };
+  var TO_MONTHLY = { monthly: 1, weekly: 4.333, annual: 1/12 };
+  var FREQ_LABEL = { monthly: 'Monthly', weekly: 'Weekly', annual: 'Annual' };
+
+  /* ── Query helpers (scoped inside #budget-app) ────────────────────────── */
+  function q(sel) { return ROOT.querySelector(sel); }
+  function qa(sel) { return ROOT.querySelectorAll(sel); }
+
+  /* ── DOM refs ─────────────────────────────────────────────────────────── */
+  var incomeEl   = q('#ba-income');
+  var pfxEl      = q('#ba-pfx');
+  var curTagEl   = q('#ba-cur-tag');
+  var flagEl     = q('#ba-flag');
+  var selectEl   = q('#ba-country');
+  var nPct = q('#ba-n-pct'), wPct = q('#ba-w-pct'), sPct = q('#ba-s-pct');
+  var nAmt = q('#ba-n-amt'), wAmt = q('#ba-w-amt'), sAmt = q('#ba-s-amt');
+  var nBar = q('#ba-n-bar'), wBar = q('#ba-w-bar'), sBar = q('#ba-s-bar');
+  var pnEl = q('#ba-pn'),    pwEl = q('#ba-pw'),    psEl = q('#ba-ps');
+  var slN  = q('#ba-sl-needs'), slW = q('#ba-sl-wants'), slS = q('#ba-sl-savings');
+  var slNv = q('#ba-sl-nv'),    slWv = q('#ba-sl-wv'),   slSv = q('#ba-sl-sv');
+  var sumEl  = q('#ba-sum');
+  var tipTxt = q('#ba-tip-text'), tipBadge = q('#ba-tip-badge');
+  var tipCnt = q('#ba-tip-count'), tipProg = q('#ba-tip-prog');
+
+  /* ── Country select build ─────────────────────────────────────────────── */
+  COUNTRIES.forEach(function(c, i) {
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = c.name + '  (' + c.cur + ')';
+    if (i === 0) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+
+  selectEl.addEventListener('change', function() {
+    country = COUNTRIES[parseInt(this.value)];
+    flagEl.textContent  = country.flag;
+    pfxEl.textContent   = country.sym.trim();
+    curTagEl.textContent = country.cur;
+    rawIncome = country.inc;
+    incomeEl.value = rawIncome;
+    render(); rebuildTipPool();
+  });
+
+  /* ── Format ───────────────────────────────────────────────────────────── */
+  function fmt(n) {
+    return country.sym + Math.round(n).toLocaleString('en-US');
+  }
+
+  /* ── Animated number counter ──────────────────────────────────────────── */
+  function animateCount(el, endVal) {
+    var startVal = parseFloat(el.dataset.val) || 0;
+    el.dataset.val = endVal;
+    var dur = 380, t0 = performance.now();
+    function tick(now) {
+      var p = Math.min((now - t0) / dur, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = country.sym + Math.round(startVal + (endVal - startVal) * e).toLocaleString('en-US');
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ── Chart.js donut ───────────────────────────────────────────────────── */
+  var centerPlugin = {
+    id: 'ba_center',
+    afterDraw: function(chart) {
+      var cd = chart.options._center;
+      if (!cd) return;
+      var ctx = chart.ctx, w = chart.width, h = chart.height;
+      ctx.save();
+      ctx.font = '600 10px Inter, sans-serif';
+      ctx.fillStyle = '#7878a0';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cd.label.toUpperCase(), w / 2, h / 2 - 14);
+      ctx.font = '800 17px Inter, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(cd.amount, w / 2, h / 2 + 11);
+      ctx.restore();
+    }
+  };
+
+  var canvas = q('#ba-donut');
+  var chart = new Chart(canvas, {
+    type: 'doughnut',
+    plugins: [centerPlugin],
+    data: {
+      datasets: [{
+        data: [50, 30, 20],
+        backgroundColor: ['#6366f1', '#ec4899', '#10b981'],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      cutout: '72%',
+      animation: { duration: 450, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      },
+      _center: { label: 'Monthly', amount: fmt(rawIncome) }
+    }
+  });
+
+  /* ── Render ───────────────────────────────────────────────────────────── */
+  function render() {
+    var monthly = rawIncome * TO_MONTHLY[freq];
+    var n = monthly * ratios.needs   / 100;
+    var w = monthly * ratios.wants   / 100;
+    var s = monthly * ratios.savings / 100;
+
+    // Donut
+    chart.data.datasets[0].data = [ratios.needs, ratios.wants, ratios.savings];
+    chart.options._center = { label: FREQ_LABEL[freq], amount: fmt(monthly) };
+    chart.update('active');
+
+    // Pct labels
+    nPct.textContent = ratios.needs   + '%';
+    wPct.textContent = ratios.wants   + '%';
+    sPct.textContent = ratios.savings + '%';
+
+    // Animated amounts
+    animateCount(nAmt, n);
+    animateCount(wAmt, w);
+    animateCount(sAmt, s);
+
+    // Bars
+    nBar.style.width = ratios.needs   + '%';
+    wBar.style.width = ratios.wants   + '%';
+    sBar.style.width = ratios.savings + '%';
+
+    // Annual projection
+    var m12 = monthly * 12;
+    animateCount(pnEl, m12 * ratios.needs   / 100);
+    animateCount(pwEl, m12 * ratios.wants   / 100);
+    animateCount(psEl, m12 * ratios.savings / 100);
+
+    // Slider tracks
+    slN.style.setProperty('--ba-pct', ratios.needs   + '%');
+    slW.style.setProperty('--ba-pct', ratios.wants   + '%');
+    slS.style.setProperty('--ba-pct', ratios.savings + '%');
+  }
+
+  /* ── Income input ─────────────────────────────────────────────────────── */
+  incomeEl.addEventListener('input', function() {
+    rawIncome = parseFloat(this.value) || 0;
+    render(); rebuildTipPool();
+  });
+
+  /* ── Frequency ────────────────────────────────────────────────────────── */
+  qa('.ba-freq-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      qa('.ba-freq-btn').forEach(function(b) { b.classList.remove('ba-active'); });
+      this.classList.add('ba-active');
+      freq = this.dataset.freq;
+      render();
+    });
+  });
+
+  /* ── Slider logic (always sums to 100) ───────────────────────────────── */
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  function onSlider(el) {
+    var val = parseInt(el.value);
+    var key = el.id === 'ba-sl-needs' ? 'needs' : el.id === 'ba-sl-wants' ? 'wants' : 'savings';
+    var others = key === 'needs' ? ['wants','savings'] : key === 'wants' ? ['needs','savings'] : ['needs','wants'];
+    var delta = val - ratios[key];
+    ratios[key] = val;
+    var oa = ratios[others[0]], ob = ratios[others[1]], tot = oa + ob;
+    if (tot > 0) {
+      ratios[others[0]] = clamp(Math.round(oa - delta * (oa / tot)), 0, 100);
+      ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
+    } else {
+      ratios[others[0]] = clamp(Math.round(-delta / 2), 0, 100);
+      ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
+    }
+    ratios[others[1]] = clamp(ratios[others[1]], 0, 100);
+    var sum = ratios.needs + ratios.wants + ratios.savings;
+    if (sum !== 100) ratios[key] = clamp(ratios[key] + 100 - sum, 0, 100);
+
+    slN.value = ratios.needs;   slW.value = ratios.wants;   slS.value = ratios.savings;
+    slNv.textContent = ratios.needs + '%'; slWv.textContent = ratios.wants + '%'; slSv.textContent = ratios.savings + '%';
+    var sum2 = ratios.needs + ratios.wants + ratios.savings;
+    sumEl.textContent = sum2 + '%';
+    sumEl.className = 'ba-sum-badge' + (sum2 === 100 ? '' : ' ba-warn');
+    render(); rebuildTipPool();
+  }
+
+  slN.addEventListener('input', function() { onSlider(slN); });
+  slW.addEventListener('input', function() { onSlider(slW); });
+  slS.addEventListener('input', function() { onSlider(slS); });
+
+  q('#ba-reset').addEventListener('click', function() {
+    ratios = { needs: 50, wants: 30, savings: 20 };
+    slN.value = 50; slW.value = 30; slS.value = 20;
+    slNv.textContent = '50%'; slWv.textContent = '30%'; slSv.textContent = '20%';
+    sumEl.textContent = '100%'; sumEl.className = 'ba-sum-badge';
+    render(); rebuildTipPool();
+  });
+
+  /* ── Tips engine ──────────────────────────────────────────────────────── */
+  var tipPool = [], tipPoolLabel = 'general', tipIdx = 0, tipTimer = null;
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function buildPool() {
+    var monthly = rawIncome * TO_MONTHLY[freq];
+    var pool = [], label = 'general';
+    if      (ratios.savings < 10)  { pool = TIPS.savings.concat(); label = 'savings'; }
+    else if (ratios.needs   > 58)  { pool = TIPS.needs.concat();   label = 'needs';   }
+    else if (ratios.wants   > 38)  { pool = TIPS.wants.concat();   label = 'wants';   }
+    else if (ratios.savings > 28)  { pool = TIPS.savings.concat(); label = 'savings'; }
+    else                           { pool = TIPS.general.concat(); label = 'general'; }
+    if (monthly < 2500)      pool = pool.concat(TIPS.income_low);
+    else if (monthly > 7500) pool = pool.concat(TIPS.income_high);
+    pool = pool.concat(TIPS.general.slice(0, 25));
+    tipPoolLabel = label;
+    return shuffle(pool);
+  }
+
+  function restartBar() {
+    tipProg.style.animation = 'none';
+    void tipProg.offsetWidth;
+    tipProg.style.animation = 'ba-tipBar 15s linear forwards';
+  }
+
+  function showTip(idx, animate) {
+    if (!tipPool.length) return;
+    var tip = tipPool[idx % tipPool.length];
+    function apply() {
+      tipTxt.textContent = tip;
+      tipTxt.classList.remove('ba-out');
+      restartBar();
+    }
+    if (animate) {
+      tipTxt.classList.add('ba-out');
+      setTimeout(apply, 320);
+    } else { apply(); }
+    tipCnt.textContent = 'Tip ' + (idx % tipPool.length + 1) + ' of ' + tipPool.length;
+    tipBadge.textContent = tipPoolLabel.charAt(0).toUpperCase() + tipPoolLabel.slice(1);
+    tipBadge.className = 'ba-tip-badge ba-' + tipPoolLabel;
+  }
+
+  function startTimer() {
+    clearInterval(tipTimer);
+    tipTimer = setInterval(function() {
+      tipIdx = (tipIdx + 1) % tipPool.length;
+      showTip(tipIdx, true);
+    }, 15000);
+  }
+
+  function rebuildTipPool() {
+    clearInterval(tipTimer);
+    tipPool = buildPool(); tipIdx = 0;
+    showTip(tipIdx, false); startTimer();
+  }
+
+  q('#ba-tip-next').addEventListener('click', function() {
+    clearInterval(tipTimer);
+    tipIdx = (tipIdx + 1) % tipPool.length;
+    showTip(tipIdx, true); startTimer();
+  });
+  q('#ba-tip-prev').addEventListener('click', function() {
+    clearInterval(tipTimer);
+    tipIdx = (tipIdx - 1 + tipPool.length) % tipPool.length;
+    showTip(tipIdx, true); startTimer();
+  });
+
+  /* ── Init ─────────────────────────────────────────────────────────────── */
   render();
   rebuildTipPool();
-});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FORMAT
-// ─────────────────────────────────────────────────────────────────────────────
-function fmt(n) {
-  const rounded = Math.round(n);
-  return currentCountry.symbol + rounded.toLocaleString('en-US');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DONUT
-// ─────────────────────────────────────────────────────────────────────────────
-function setSegment(el, pct, offset) {
-  const len = (pct / 100) * CIRC;
-  el.style.strokeDasharray  = `${len} ${CIRC - len}`;
-  el.style.strokeDashoffset = -offset * CIRC / 100;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RENDER
-// ─────────────────────────────────────────────────────────────────────────────
-function render() {
-  const monthly = rawIncome * toMonthly[freq];
-  const n = monthly * ratios.needs   / 100;
-  const w = monthly * ratios.wants   / 100;
-  const s = monthly * ratios.savings / 100;
-
-  dcTotal.textContent    = fmt(monthly);
-  dcLabelEl.textContent  = freqLabel[freq];
-  setSegment(ringNeeds,   ratios.needs,   0);
-  setSegment(ringWants,   ratios.wants,   ratios.needs);
-  setSegment(ringSavings, ratios.savings, ratios.needs + ratios.wants);
-
-  needsPct.textContent   = ratios.needs   + '%';
-  wantsPct.textContent   = ratios.wants   + '%';
-  savingsPct.textContent = ratios.savings + '%';
-  setAmt(needsAmt,   n);
-  setAmt(wantsAmt,   w);
-  setAmt(savingsAmt, s);
-  needsBar.style.width   = ratios.needs   + '%';
-  wantsBar.style.width   = ratios.wants   + '%';
-  savingsBar.style.width = ratios.savings + '%';
-
-  const m12 = monthly * 12;
-  projNeeds.textContent   = fmt(m12 * ratios.needs   / 100);
-  projWants.textContent   = fmt(m12 * ratios.wants   / 100);
-  projSavings.textContent = fmt(m12 * ratios.savings / 100);
-
-  slNeeds.style.setProperty('--pct',   ratios.needs   + '%');
-  slWants.style.setProperty('--pct',   ratios.wants   + '%');
-  slSavings.style.setProperty('--pct', ratios.savings + '%');
-}
-
-function setAmt(el, val) {
-  const next = fmt(val);
-  if (el.textContent !== next) {
-    el.textContent = next;
-    el.classList.remove('amount-pulse');
-    void el.offsetWidth;
-    el.classList.add('amount-pulse');
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INPUTS
-// ─────────────────────────────────────────────────────────────────────────────
-incomeEl.addEventListener('input', () => {
-  rawIncome = parseFloat(incomeEl.value) || 0;
-  render(); rebuildTipPool();
-});
-
-document.querySelectorAll('.freq-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    freq = btn.dataset.freq;
-    render();
-  });
-});
-
-function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
-
-function onSlider(changed) {
-  const val = parseInt(changed.value);
-  const key = changed.id === 'slNeeds' ? 'needs' : changed.id === 'slWants' ? 'wants' : 'savings';
-  const others = key === 'needs' ? ['wants','savings'] : key === 'wants' ? ['needs','savings'] : ['needs','wants'];
-  const prev = ratios[key], delta = val - prev;
-  ratios[key] = val;
-  const oa = ratios[others[0]], ob = ratios[others[1]], total = oa + ob;
-  if (total > 0) {
-    ratios[others[0]] = clamp(Math.round(oa - delta * (oa / total)), 0, 100);
-    ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
-  } else {
-    ratios[others[0]] = clamp(Math.round(-delta / 2), 0, 100);
-    ratios[others[1]] = 100 - ratios[key] - ratios[others[0]];
-  }
-  ratios[others[1]] = clamp(ratios[others[1]], 0, 100);
-  const sum = ratios.needs + ratios.wants + ratios.savings;
-  if (sum !== 100) ratios[key] = clamp(ratios[key] + 100 - sum, 0, 100);
-  slNeeds.value = ratios.needs; slWants.value = ratios.wants; slSavings.value = ratios.savings;
-  slNeedsVal.textContent = ratios.needs + '%'; slWantsVal.textContent = ratios.wants + '%'; slSavingsVal.textContent = ratios.savings + '%';
-  const sum2 = ratios.needs + ratios.wants + ratios.savings;
-  sumBadge.textContent = sum2 + '%';
-  sumBadge.className = 'sum-badge' + (sum2 === 100 ? '' : ' warn');
-  render(); rebuildTipPool();
-}
-
-slNeeds.addEventListener('input',   () => onSlider(slNeeds));
-slWants.addEventListener('input',   () => onSlider(slWants));
-slSavings.addEventListener('input', () => onSlider(slSavings));
-
-resetBtn.addEventListener('click', () => {
-  ratios = { needs: 50, wants: 30, savings: 20 };
-  slNeeds.value = 50; slWants.value = 30; slSavings.value = 20;
-  slNeedsVal.textContent = '50%'; slWantsVal.textContent = '30%'; slSavingsVal.textContent = '20%';
-  sumBadge.textContent = '100%'; sumBadge.className = 'sum-badge';
-  render(); rebuildTipPool();
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TIPS
-// ─────────────────────────────────────────────────────────────────────────────
-const TIPS = {
-  needs: [
-    "Negotiate your rent annually — even a 5% reduction saves thousands per year.",
-    "Switch to a high-deductible health plan if you're generally healthy and pair it with an HSA.",
-    "Bundle home, auto, and life insurance with one provider for multi-policy discounts.",
-    "Shop at discount grocers — studies show 20–40% savings vs. name brands.",
-    "Meal prep weekly to cut grocery waste by up to 30%.",
-    "Install a smart thermostat — average households save significantly on energy bills.",
-    "Refinance your mortgage when rates drop by 1% or more to lower monthly payments.",
-    "Use generic pharmacy programs to cut prescription costs by 80%+.",
-    "Cancel unused gym memberships and replace with free YouTube workouts.",
-    "Move to a lower cost-of-living area if remote work is possible.",
-    "Downsize your vehicle — a lower car payment saves thousands per year.",
-    "Drop collision coverage on cars worth less than 10× the annual premium.",
-    "Use a library card for books, audiobooks, and magazines — all free.",
-    "Line-dry clothes instead of using a dryer — saves significantly on electricity.",
-    "Set your water heater to 49°C — the default 60°C wastes energy.",
-    "Use cold water for laundry — 90% of washer energy goes to heating water.",
-    "Unplug devices when not in use or use smart power strips to kill phantom loads.",
-    "Use cash-back apps on every grocery trip.",
-    "Compare car insurance rates every renewal — loyalty rarely pays.",
-    "Ask your employer about commuter benefits to pre-tax public transit costs.",
-    "Use a FSA to pay medical expenses pre-tax if available in your country.",
-    "Buy a deep freezer and stock up when protein is on sale.",
-    "Grow herbs and easy vegetables at home — basil alone saves money over the year.",
-    "Switch to a SIM-only phone plan — often 70% cheaper than bundled contracts.",
-    "Audit your subscriptions quarterly and cancel anything unused for 30+ days.",
-    "Raise your insurance deductibles and bank the premium savings instead.",
-    "Cook double portions and freeze — saves both time and future food costs.",
-    "Drink filtered tap water — costs 300× less than bottled.",
-    "Buy store-brand medications — regulators require identical active ingredients.",
-    "Carpool or use park-and-ride to cut commuting costs by 50%.",
-    "Ask your landlord for a longer lease in exchange for a rent freeze.",
-    "Switch to a credit union — lower fees and better rates than commercial banks.",
-    "Contact service providers to ask for loyalty discounts — most have retention offers.",
-    "Use energy-efficient LED bulbs — they use 75% less energy and last 25× longer.",
-    "Shop at thrift stores for clothing — brand names at 90% off.",
-    "Make coffee at home — saves significant money vs. buying daily.",
-    "Use telehealth for minor ailments — often free with insurance, saves co-pay and time.",
-    "Reduce meat consumption by 2 days/week — saves meaningfully on groceries.",
-    "Plant-based proteins (lentils, beans, tofu) cost a fraction of the price of beef.",
-    "Buy a slow cooker — turns cheap cuts of meat into gourmet meals.",
-    "Time your grocery shopping to clearance hours — usually evenings and Sunday mornings.",
-    "Pay extra on your mortgage principal every month to reduce total interest paid.",
-    "Consider house hacking — renting a room covers part of your mortgage.",
-    "Use a cashback credit card for all necessities — but pay in full every month.",
-    "Join a community-supported agriculture box for seasonal produce savings.",
-    "Negotiate a pay-as-you-go plan for rarely-used utilities.",
-    "Use apps to auto-negotiate bills and cancel forgotten subscriptions.",
-    "Get a free annual credit report and dispute errors — errors raise your loan rates.",
-    "Use a water filter pitcher instead of buying bottled water.",
-    "Batch errands together to cut fuel costs and driving time.",
-    "Install low-flow showerheads — save thousands of litres of water per year.",
-    "Use auto-pay for utilities to avoid late fees.",
-    "Look into telecommuting even 2 days/week — saves commuting and lunch costs.",
-    "Use a community tool library instead of buying rarely-used tools.",
-    "Shop with a list and never on an empty stomach — impulse adds 20–40% to grocery bills.",
-    "Use the library's streaming services — free movies and music.",
-    "Compare grocery stores with price-tracking apps before your weekly shop.",
-    "Seal windows and doors with weatherstripping — can reduce heating costs by 15%.",
-    "Pay biweekly instead of monthly on your mortgage — makes 1 extra payment per year.",
-    "Request a rate review from your cell carrier annually — plans change frequently.",
-    "Research local food banks and pantries if times are tight — it's a community resource.",
-    "Look into government assistance programs available in your country.",
-    "Use public transportation even once a week to meaningfully cut monthly transport costs.",
-    "Negotiate medical bills — hospitals often have financial assistance programs.",
-    "Ask about 90-day prescription discounts vs. monthly refills.",
-    "Buy an energy-efficient appliance when replacing old ones — often qualifies for rebates.",
-    "Share a wholesale club membership with a family member or friend.",
-    "Use a bicycle for short trips — eliminates fuel and parking costs entirely.",
-    "Shop at ethnic grocery stores for produce and spices — often significantly cheaper.",
-    "Cook dried beans and lentils — cheap and high in protein.",
-    "Ask your employer for a formal raise review — underpaid workers rarely get raises without asking.",
-    "Use generic alcohol brands — blind taste tests regularly favour them over premium.",
-    "Find free Wi-Fi at libraries to reduce mobile data costs.",
-    "Consider a roommate — sharing costs cuts housing expenses by up to 40%.",
-    "Dispute incorrect credit report items — errors can raise rates on loans.",
-    "Use a rain barrel to collect water for garden use.",
-    "Buy store-brand pantry staples — quality is usually identical to name brands.",
-    "Look into income-based housing assistance programs in your country.",
-    "Use the 'pay yourself first' rule — automate needs-bucket transfers on payday.",
-    "Compare utility providers annually — switching saves real money.",
-    "Use free preventive health screenings available through public health programmes.",
-    "Learn basic car maintenance — an oil change at home costs a fraction of a service visit.",
-    "Negotiate package deals with your internet/mobile provider.",
-    "Use loyalty cards consistently at one grocery store for cumulative rewards.",
-    "Buy in bulk for non-perishables when on sale — rice, pasta, oil, toiletries.",
-    "Use a power strip with a timer to cut standby power on entertainment systems.",
-    "Plan meals around what's on sale each week, not around cravings.",
-    "Use cashback portals before any online purchase — often 3–10% back.",
-    "Switch to a prepaid mobile plan if you use less than your current allowance.",
-    "Find a community garden plot — fresh vegetables at minimal cost.",
-    "Use a bread machine or bake your own — costs a fraction of bakery prices.",
-    "Check if your employer offers free employee assistance programmes for financial counselling.",
-    "Use prescription discount cards even with insurance — sometimes cheaper.",
-    "Buy pre-owned furniture and appliances — Facebook Marketplace has great deals.",
-    "Apply for every tax relief and rebate available in your country — they add up.",
-    "Use a comparison website for utilities, insurance, and mobile contracts annually.",
-    "Switch to paperless billing to avoid postal fees and track spending digitally.",
-    "Look for free or subsidised childcare programmes offered by your local government."
-  ],
-
-  wants: [
-    "Implement a 48-hour rule before buying anything over a certain amount — impulse fades.",
-    "Delete shopping apps from your phone — out of sight, out of cart.",
-    "Unsubscribe from retail email lists to remove temptation.",
-    "Use a dedicated 'wants' debit card preloaded each month — when it's gone, it's gone.",
-    "Cook restaurant-quality meals at home — YouTube has incredible tutorials.",
-    "Host a potluck instead of going out — same social experience at a fraction of the cost.",
-    "Use discount sites for experiences instead of paying full price for activities.",
-    "Do a 'no-spend weekend' once a month — it resets your relationship with money.",
-    "Borrow books, DVDs, and games from the library instead of buying.",
-    "Rotate streaming services — keep one for 3 months, swap to another.",
-    "Make your own cocktails at home — far cheaper than bar prices.",
-    "Shop end-of-season sales for clothing — 50–70% off next year's wardrobe.",
-    "Use secondhand marketplaces instead of buying new.",
-    "Trade skills with friends — reduces cash spending.",
-    "Set a gift budget per person per year and stick to it — experiences over things.",
-    "Try 'experience gifts' — cooking class, concert, hike — richer than objects.",
-    "Create a 'fun fund' jar — visual savings makes spending intentional.",
-    "Use free community apps for hobby groups — low-cost, social, community-building.",
-    "Check if museums and attractions have free admission days — many do.",
-    "Use your employer's discount programme for entertainment.",
-    "Buy used electronics — last year's models cost 40–60% less and work identically.",
-    "Use a cashback portal before buying anything online.",
-    "Set a 'splurge once a month' ritual — one deliberate luxury beats random small indulgences.",
-    "Cancel subscriptions with annual fees you forgot — audit your bank statement monthly.",
-    "Switch to a hobby that builds skills — cooking, gardening, coding — rather than just consuming.",
-    "Check for free concerts, festivals, and outdoor events in your city every weekend.",
-    "Negotiate with your gym — month-to-month is often cheaper than annual plans.",
-    "Use your wants budget on experiences, not things — experiences bring more lasting happiness.",
-    "Try a 'Project 333' wardrobe challenge — discover you need far less than you think.",
-    "Use the envelope method for discretionary spending — physical cash creates friction.",
-    "Recognise 'retail therapy' patterns — shopping when stressed often leads to regret.",
-    "Use a price-tracking extension before buying online.",
-    "Try free outdoor activities: hiking, cycling, picnics, beach — natural joy is free.",
-    "Use your local parks and recreation department — free or low-cost classes and events.",
-    "Put your wants spending on a 30-day list — things dropped before day 30 weren't real wants.",
-    "Rent equipment for a day before deciding to buy it.",
-    "Try a 'no restaurant month' once a year — cook everything. You'll discover you're good at it.",
-    "Buy tech one generation behind — last year's flagship is 40% cheaper.",
-    "Negotiate your cable, streaming, or gym bundle annually.",
-    "Use online marketplaces for furniture and appliances — great deals in every country.",
-    "Download free museum audio tours instead of paying the rental fee.",
-    "Borrow camping gear before buying — then decide if it's worth owning.",
-    "Use a student or alumni discount for software, entertainment, and travel.",
-    "Split costs on gifts, group subscriptions, or experiences with friends.",
-    "Review your wants log monthly and ask: 'Was this worth it?'",
-    "Identify your top 3 genuine wants and fund those fully. Cut the rest ruthlessly.",
-    "Use meal prep to resist the temptation of expensive convenience food.",
-    "Try 'conscious consumption' — before buying, ask if you're buying the thing or the feeling.",
-    "Apply the 'one-in-one-out' rule for clothing and electronics.",
-    "Give experiences instead of gifts at holidays — saves money and creates memories.",
-    "Make your own greeting cards — a handwritten card means more than a store-bought one.",
-    "Use loyalty programmes strategically — one hotel chain, one airline, one coffee shop.",
-    "Try a staycation — explore your own city like a tourist for a week.",
-    "Cook cultural cuisines at home — cheaper and more fun than takeout.",
-    "Use a monthly discretionary spending review to spot categories that crept up.",
-    "Seek out free community events — movie nights, markets, concerts in the park.",
-    "Make a game of finding the best free or cheap version of something you love.",
-    "Recognise FOMO spending — most 'limited time' offers return. Don't rush.",
-    "Invest in one high-quality item you use daily instead of several cheap ones.",
-    "Track every wants purchase for one month with zero judgment — data is enlightening.",
-    "Compare the cost-per-use before every entertainment purchase.",
-    "Choose a cheap hobby you can do daily — journaling, photography, chess.",
-    "Set a clear 'fun budget' per week and treat it like a game to maximise enjoyment per dollar.",
-    "Cancel a subscription today — just one — and observe whether you miss it.",
-    "Build your wants wishlist and review it monthly — many items drop off naturally.",
-    "Seek 'experience over stuff' as a household rule — memories outlast objects.",
-    "Compare what an hour of work buys before making a large purchase — creates perspective.",
-    "Use travel credit card perks before paying cash for experiences.",
-    "Plan one great experience per month rather than many forgettable small indulgences.",
-    "Learn to cook one dish really well — it replaces a restaurant meal every week.",
-    "Volunteer at events — usually get free entry in exchange.",
-    "Pay for wants with a debit card, never a credit card, to stay in budget.",
-    "Discover free podcasts and YouTube channels instead of paid courses for hobbies.",
-    "Use free library e-book services — save on book purchases.",
-    "Host game nights or film nights at home — deeply social, nearly free.",
-    "Try a 'buy nothing' month once a year — it recalibrates your spending baseline.",
-    "Shop secondhand first as a default for clothing — buy new only if unavailable.",
-    "Build social accountability — tell a friend your discretionary budget and check in monthly.",
-    "Apply the 'joy test' — does this bring real joy or just momentary relief?",
-    "Use your wants budget intentionally — plan it, don't spend it reactively.",
-    "Compare what you spend on wants vs. what you remember fondly — realign accordingly.",
-    "Explore local nature spots — the best entertainment in any country is often free.",
-    "Cook with seasonal produce — it's cheaper, fresher, and supports local farmers.",
-    "Discover your local library's full offering — many lend tools, toys, and more.",
-    "Use ride-sharing only for long trips, walk or cycle for short ones.",
-    "Set a monthly dining-out budget and treat every meal as a special occasion.",
-    "Use subscription boxes as a trial only — cancel before the second charge.",
-    "Try co-cooking with friends — split ingredient costs, enjoy social time.",
-    "Repurpose items before buying new — creativity beats consumption.",
-    "Track your happiest memories from the last year — few will involve purchases.",
-    "Use your wants spending to invest in relationships, not possessions.",
-    "Avoid 'keeping up with the Joneses' — most people are in debt to look wealthy.",
-    "Apply a 'fun ROI' metric — how much joy per currency unit did this bring?",
-    "Build free rituals — morning walks, journaling, cooking — that anchor your week.",
-    "Remember: the best things in life often aren't things at all."
-  ],
-
-  savings: [
-    "Automate your savings on payday — you can't spend what you never see.",
-    "Save your next raise entirely — lifestyle inflation is the #1 wealth killer.",
-    "Build a 3–6 month emergency fund before investing in anything else.",
-    "Use a high-yield savings account — rates often 10–20× higher than standard accounts.",
-    "Max your employer's pension or retirement match first — it's an instant 50–100% return.",
-    "Save windfalls (tax refunds, bonuses) before spending — deposit first, decide later.",
-    "Use the pay-yourself-first rule — savings transfer happens before bills.",
-    "Round up purchases and save the difference automatically.",
-    "Micro-save using mobile apps — small amounts compound fast.",
-    "Increase your savings rate by 1% every year — you'll barely notice the difference.",
-    "Open a separate 'opportunity fund' for investments that come up unexpectedly.",
-    "Build a career insurance fund — 3 months saved specifically for voluntary career changes.",
-    "Use a 52-week savings challenge — small weekly increases build a significant sum.",
-    "Automate a small increase to savings every 6 months — gradual change is sustainable.",
-    "Set a 'savings ceiling' — spend only to a fixed limit, auto-save the rest.",
-    "Set up sinking funds for predictable expenses: car repair, holidays, travel.",
-    "Create a 'freedom fund' — savings earmarked specifically for career flexibility.",
-    "Calculate your savings rate monthly — it's more important than your income.",
-    "Aim for a 25% savings rate long-term — it unlocks financial independence in ~32 years.",
-    "Invest in index funds for long-term savings — low cost, diversified, time-tested.",
-    "Understand compound interest: regular investing over 30 years creates dramatic growth.",
-    "Start saving for retirement as early as possible — every decade of delay costs enormously.",
-    "Never cash out a retirement account when changing jobs — roll it over instead.",
-    "Keep 3 months of expenses in cash; invest anything beyond 6 months.",
-    "Use dollar-cost averaging — invest the same amount monthly regardless of market conditions.",
-    "Avoid timing the market — time in the market beats timing the market, always.",
-    "Rebalance your portfolio annually to maintain your target asset allocation.",
-    "Use low-cost index funds — expense ratios matter enormously over decades.",
-    "Understand your employer's vesting schedule before leaving a job.",
-    "Increase retirement contributions by 1% on every performance review.",
-    "Track your net worth monthly — watching it grow is the best motivation.",
-    "Save for a house down payment in a high-yield savings account labelled 'house'.",
-    "Invest in yourself: one professional certification can increase income significantly.",
-    "Avoid lifestyle inflation: bank 50% of every raise instead of spending it.",
-    "Understand the 4% rule: you can retire when savings = 25× annual expenses.",
-    "Diversify across asset classes: stocks, bonds, real estate, and cash.",
-    "Reinvest all dividends automatically — they compound and become a major return source.",
-    "Avoid high-fee financial advisors — a 1% fee on a large portfolio costs enormously.",
-    "Use robo-advisors for passive, low-cost investing.",
-    "Start a side income stream and save 100% of it for 1 year.",
-    "Never carry a credit card balance — interest rates erase any investment gains.",
-    "Pay off high-interest debt before investing in the market.",
-    "Use the avalanche method: pay off highest-interest debt first to save the most.",
-    "Keep investment costs under 0.2% annually — fees are the silent wealth killer.",
-    "Build your credit score — a good score saves money on loans and insurance.",
-    "Save your car payment after paying it off — you're used to the expense.",
-    "Use a 'bill yourself first' approach — savings is a bill you pay to your future self.",
-    "Know your 'FI number': annual expenses × 25. That's your retirement target.",
-    "Invest in broad market ETFs — they outperform the vast majority of active funds.",
-    "Track your savings rate with a simple spreadsheet — what gets measured gets improved.",
-    "Save your next windfall in 3 buckets: emergency fund, fun, investments.",
-    "Use a simple two-fund portfolio: total stock market + bonds. Rebalance yearly.",
-    "Review and optimise your tax situation annually — taxes are your largest expense.",
-    "Build multiple income streams — a single income is a single point of failure.",
-    "Read one personal finance book per quarter — knowledge compounds too.",
-    "Use free financial planning tools to see the full picture.",
-    "Understand your pension or provident fund rules — many people leave money on the table.",
-    "Make your savings rate your identity, not your income level.",
-    "Review beneficiaries on all accounts annually — they override your will.",
-    "Build a will and estate plan — ensures your savings goes exactly where you intend.",
-    "Build a 'sabbatical fund' — 3 months of expenses earmarked for a future career pause.",
-    "The best savings advice: start today. Every day of delay costs compound interest.",
-    "Avoid financial products with surrender charges, complex fine print, or pushy salespeople.",
-    "Understand marginal tax — earning more doesn't mean your whole income gets taxed more.",
-    "Consider real estate as a savings vehicle if property rights are strong in your country.",
-    "Use a government-backed savings scheme if available — often tax-advantaged.",
-    "Set a 'future self' savings account — label it with your target retirement date.",
-    "Automate annual contributions to retirement accounts on January 1 each year.",
-    "Use stock or profit-sharing events as forced savings milestones.",
-    "Aim to save your age as a percentage of income — 30 years old → 30% savings rate.",
-    "Keep a written investment policy statement to stay disciplined during market volatility.",
-    "Understand dollar-cost averaging emotionally: market downturns are buying opportunities.",
-    "Never withdraw from investments early — penalties and opportunity cost can be enormous.",
-    "Open a separate investment account for goals 5+ years out.",
-    "Learn the basics of your country's tax system — knowing what's deductible saves money.",
-    "Use cashback and rewards from credit cards to fund a savings goal.",
-    "Save before you see it — have savings come out the day your salary arrives.",
-    "Consider national savings certificates or government bonds for safe, moderate returns.",
-    "Understand the power of 1% — improving savings rate by 1% yearly compounds dramatically.",
-    "Save for education costs early — compound growth makes a huge difference.",
-    "Build a 'home maintenance reserve' — 1–2% of home value per year.",
-    "Look into mobile savings apps that round up everyday purchases and invest the difference.",
-    "Consider diversifying across currencies if your local currency is volatile.",
-    "Investigate whether your employer offers any share purchase or matching schemes.",
-    "Calculate the cost of waiting: delaying savings by 5 years can halve your retirement fund.",
-    "Keep emergency savings in a separate bank — out of sight, out of reach.",
-    "Prioritise saving over investing until you have 3 months of expenses saved.",
-    "Use your savings to reduce financial stress — peace of mind has real value.",
-    "Build a strong savings habit now — it gets easier, not harder, over time.",
-    "Review your savings goals annually and adjust for life changes.",
-    "Celebrate every savings milestone — first significant amount saved, first investment made.",
-    "Never stop saving, even during tough months — even a tiny amount maintains the habit.",
-    "Understand the concept of 'enough' — knowing your target makes saving feel achievable.",
-    "Teach children to save from a young age — the habit is more valuable than the amount.",
-    "Use automatic savings to remove willpower from the equation entirely.",
-    "Progress, not perfection, is the measure of savings success.",
-    "A small consistent savings habit started today is worth more than a large one started later.",
-    "Financial freedom is built in boring increments — save consistently and wait patiently.",
-    "Your future self is depending on the savings decisions you make today."
-  ],
-
-  income_low: [
-    "Even very small amounts invested consistently for decades create significant wealth.",
-    "Track every currency unit when income is tight — awareness is your most powerful tool.",
-    "Apply for every government benefit you're entitled to — many go unclaimed.",
-    "Use free tax preparation services to ensure you claim every credit.",
-    "Build your first small emergency fund before anything else — it breaks the debt cycle.",
-    "Use local food banks, pantries, and community resources — that's exactly what they're for.",
-    "Side gigs can add meaningful income with relatively few hours per week.",
-    "Sell unused items online — most homes have significant value in sellable goods.",
-    "Negotiate medical and utility bills — payment plans are almost always available.",
-    "Learn a high-demand skill for free — many online platforms offer free certificates.",
-    "Use income-driven repayment for student loans if available — payments can be minimal.",
-    "Check for community assistance programmes for utilities, childcare, and transportation.",
-    "Build skills that increase your income — a raise invested over 30 years is life-changing.",
-    "Use cashback apps on every purchase — small amounts add up.",
-    "Look into employer tuition reimbursement programmes to upskill at no personal cost.",
-    "Prioritise eliminating high-interest debt — it's a guaranteed return equal to the rate.",
-    "Use a zero-based budget — assign every currency unit a job.",
-    "Earn referral bonuses from apps and services you already use.",
-    "Ask about a pay advance or earned wage access before using expensive credit.",
-    "Reduce subscription spending to zero during tight months.",
-    "Grow a small container garden for herbs and vegetables.",
-    "Use public transportation — owning a car costs far more than most people realise.",
-    "Consider a room rental vs. a whole apartment — can save significantly per month.",
-    "Avoid payday loans entirely — the effective interest rate is often extremely high.",
-    "Use buy-nothing groups for furniture, clothing, and household items.",
-    "Seek free financial literacy workshops from local libraries or credit unions.",
-    "Negotiate a payment plan for overdue bills — most creditors prefer it to default.",
-    "Use community health centres for affordable primary care.",
-    "Learn basic car maintenance to avoid expensive service centre visits.",
-    "Explore apprenticeships or trade programmes in high-paying skilled trades.",
-    "Prioritise your highest-income skill and invest in developing it further.",
-    "Ask your employer for a formal raise review — underpaid workers rarely get raises without asking.",
-    "Use free mental health resources — financial stress is a health issue too.",
-    "Automate even a tiny amount to savings monthly — the habit is what matters now.",
-    "Explore gig economy options for flexible extra income.",
-    "Consider a roommate — sharing costs cuts housing expenses dramatically.",
-    "Build a skills portfolio online — increases employability at zero cost.",
-    "Know the difference between unavoidable hardship and solvable problems.",
-    "Use community lending circles for zero-interest loans for essential needs.",
-    "Look into microfinance options if starting a small business.",
-    "Apply for every scholarship and grant available for education.",
-    "Use public libraries for all entertainment, education, and internet access needs.",
-    "Cook from scratch — processed and convenience food costs far more per calorie.",
-    "Join a carpool to cut transport costs significantly.",
-    "Use a prepaid mobile plan — no contract, no bill shock.",
-    "Claim every work-related expense as a tax deduction where applicable.",
-    "Look into government start-up grants if you have a business idea.",
-    "Use energy-saving measures aggressively — every unit of energy saved is money kept.",
-    "Prioritise sleep and health — prevention is far cheaper than treatment.",
-    "Remember: tight budgets require creativity, not shame. Many wealthy people started here."
-  ],
-
-  income_high: [
-    "With high income, your savings rate matters more than investment returns.",
-    "Max every tax-advantaged account before investing in taxable accounts.",
-    "At high income, tax optimisation becomes more valuable than expense cutting.",
-    "Hire a fee-only fiduciary financial planner — not a commission-based advisor.",
-    "Use charitable giving vehicles to batch donations and maximise deductions.",
-    "Invest in low-cost index funds even with high income — simple wins.",
-    "Rebalance your portfolio based on life events, not market movements.",
-    "Understand estate planning — wills, trusts, and beneficiary designations.",
-    "Consider umbrella insurance — protects high-value assets from liability.",
-    "Avoid lifestyle inflation — it's the primary reason high earners aren't wealthy.",
-    "Invest in your business or skills — internal returns often beat market returns.",
-    "Consider disability insurance — your income is your greatest asset.",
-    "Build a team: accountant, estate attorney, financial planner — returns exceed fees.",
-    "Use direct indexing for tax-loss harvesting at scale.",
-    "Invest in international diversification — your home country is a single-country bet.",
-    "Consider real estate for passive income and tax benefits.",
-    "Build your 'FI number' — at high income you can reach financial independence much faster.",
-    "Use concentrated stock positions cautiously — diversify upon vesting.",
-    "Review asset allocation for risk as wealth grows — not just chasing returns.",
-    "Understand the tax treatment of investments in your country — it's significant at scale.",
-    "Give equity to children's accounts — transfers wealth tax-efficiently.",
-    "Invest in private lending for above-market fixed-income returns.",
-    "Consider international real estate diversification.",
-    "Use a trust to protect assets and simplify estate transfer.",
-    "Max all available pension and retirement contributions before taxable investing.",
-    "Use loss harvesting in your investment portfolio annually.",
-    "Look into tax-efficient charitable structures in your country.",
-    "Consider municipal or government bonds for tax-exempt income at higher brackets.",
-    "Build a financial model for early retirement — it's likely more achievable than you think.",
-    "Create a legacy plan: will, trust, beneficiary designations, and power of attorney.",
-    "Use a good accountant, not just software — at high income, expert advice pays for itself.",
-    "Understand the tax impact of each investment decision before making it.",
-    "Invest in skills that compound with your career: leadership, sales, communication.",
-    "Track net worth quarterly — at high income, net worth trajectory matters most.",
-    "Build generational wealth: invest in your children's financial education.",
-    "Consider private equity or venture capital exposure via funds.",
-    "Use share vesting events to diversify and fund long-term savings goals.",
-    "Benchmark your savings rate against your income — high earners should save aggressively.",
-    "Give generously — it increases wellbeing and often creates tax benefits.",
-    "Use your income advantage to build a legacy, not just a lifestyle.",
-    "Fund education accounts early — compound growth makes a huge difference.",
-    "Review your insurance portfolio — at high income, underinsurance is costly.",
-    "Consider a self-invested pension plan for maximum retirement flexibility.",
-    "Use a variable annuity only if you've exhausted all other tax-advantaged options.",
-    "Explore sovereign wealth bonds or government schemes for high-net-worth savers.",
-    "Keep a close eye on currency risk if holding international assets.",
-    "Use professional asset protection strategies if your profession has liability risk.",
-    "Build board and advisory relationships — expands both income and network.",
-    "Remember: high income without savings discipline leads to the same outcome as low income.",
-    "The goal is net worth, not gross income — always optimise for the gap between the two."
-  ],
-
-  general: [
-    "Write down your top 3 financial goals. Goals without paper are just wishes.",
-    "Review your budget every single month — life changes, your plan should too.",
-    "Understand the difference between an asset and a liability. Buy more assets.",
-    "Never co-sign a loan. You take 100% of the risk with 0% of the benefit.",
-    "The best investment is one you understand completely.",
-    "Your credit or borrowing score saves real money — build and protect it.",
-    "Insurance is not an investment — it's risk transfer. Buy only what you need.",
-    "Compound interest works for you in investments and against you in debt.",
-    "Know your 'enough' — contentment is a superpower in personal finance.",
-    "Automate everything: savings, bill pay, investments. Remove willpower from the equation.",
-    "Money is a tool. Decide what you want to build with it.",
-    "'Rich' is income. 'Wealthy' is having assets that work while you sleep.",
-    "Live below your means — it's the single most powerful financial habit.",
-    "Index funds beat the vast majority of actively managed funds over 10+ years.",
-    "Your biggest financial risk is often your own behaviour during market downturns.",
-    "The 1% rule: improve your financial habits by 1% each month — it compounds dramatically.",
-    "Compare prices without guilt — it's not cheap, it's intelligent.",
-    "Set a 'financial date' with your partner monthly — money conversations prevent money fights.",
-    "Your house is a home first, an investment second.",
-    "Diversification is the only free lunch in investing — don't put it all in one place.",
-    "Inflation is a silent tax — your savings must grow faster than inflation.",
-    "Don't time the market; time in the market is the strategy that works.",
-    "Delay large purchases by 1 month — the need often disappears or a better deal appears.",
-    "Understand your financial 'why' — motivation needs a purpose to be sustainable.",
-    "The best time to plant a financial tree was 10 years ago. The second best time is today.",
-    "Wealth is built in boring increments, not exciting moments.",
-    "Don't compare your financial situation to others' — you see their highlight reel.",
-    "Financial literacy is a skill. Study it like any other valuable skill.",
-    "One financial mistake does not define you — what matters is the response.",
-    "Keep a 'money journal' — write about your spending feelings once a week.",
-    "Your financial plan should survive a divorce, illness, or job loss. Is it resilient?",
-    "Money can buy freedom. That's the most valuable thing it can buy.",
-    "Know your hourly rate — it changes how you value both time and purchases.",
-    "The goal of budgeting is not restriction — it's intentionality.",
-    "Small, consistent actions beat large, irregular ones in personal finance every time.",
-    "Seek simplicity in financial products — if you can't explain it, don't buy it.",
-    "Budgeting is not a punishment — it's a plan for the life you want.",
-    "Every dollar or currency unit has a job. Give it instructions, or it will spend itself.",
-    "Financial stress is a leading cause of relationship conflict. Communicate openly about money.",
-    "Ask for raises — the biggest income jump most people get is from changing jobs.",
-    "Understand how taxes work in your country — it's likely your largest expense.",
-    "Build multiple income streams — a single income point is a single point of failure.",
-    "Generosity and financial health aren't opposites — giving is part of a healthy money mindset.",
-    "Teach your children about money — financial literacy isn't in most school curricula.",
-    "Review your financial plan after every major life event.",
-    "The best savings account is the one you actually use consistently.",
-    "Use a simple net worth spreadsheet and update it monthly.",
-    "Your financial plan should reflect your values, not society's expectations.",
-    "Wealth is not about income — it's about the gap between what you earn and what you spend.",
-    "The FIRE movement is achievable on median income with discipline and time.",
-    "A good budget has room for fun. A budget you hate is a budget you'll abandon.",
-    "Never let perfection stop you from starting — an imperfect budget beats no budget.",
-    "Use a simple spending tracker for just 1 month — the insights will surprise you.",
-    "Financial confidence is built one correct decision at a time.",
-    "Know the fees on every financial product you own. Fees compound against you.",
-    "Long-term thinking is the ultimate financial superpower.",
-    "The 'latte factor' is real — small habitual expenses do compound into large sums.",
-    "Create a personal financial policy statement: rules you live by with money.",
-    "Talk to one financially successful person in your network. Ask them their habits.",
-    "Reduce financial complexity — fewer accounts, fewer products, fewer decisions.",
-    "A financial emergency fund is not an investment — it's insurance. Keep it liquid.",
-    "Think in systems, not goals: build systems that automatically improve your finances.",
-    "Your money mindset was shaped by childhood. Challenge beliefs that don't serve you.",
-    "Never stop learning about money — the financial landscape always changes.",
-    "Spend less than you earn. Invest the difference. Wait. Repeat. That's the whole strategy.",
-    "Financial freedom isn't about being rich — it's about having choices.",
-    "The most important financial decision you'll make is who you choose as a life partner.",
-    "Consistency over time beats intensity in short bursts. Save a little, always.",
-    "Don't confuse income with wealth. Many high earners are broke.",
-    "Progress, not perfection, is the measure of financial success.",
-    "Define what 'enough' looks like for you — without that definition, the goal is endless.",
-    "Your best investment: time, not just money. Start early, never stop.",
-    "Review your beneficiary designations annually — they often get forgotten.",
-    "The best financial tool in the world is a budget you actually look at every week.",
-    "Small wins matter: paying off one small debt creates momentum for tackling bigger ones.",
-    "Seek to understand before you invest — curiosity is free, ignorance can be costly.",
-    "Financial health is not an emergency to fix — it's a lifestyle to maintain.",
-    "Spend intentionally, save systematically, invest consistently. Repeat for 30 years.",
-    "What would you do with your money if you weren't afraid? Start there.",
-    "Delayed gratification is a learnable skill — and one of the most valuable in personal finance.",
-    "Know your net worth to the number. People who track their wealth build more of it.",
-    "A small consistent savings habit started today is worth more than a large one started later.",
-    "Every financial decision is a trade-off. Know what you're trading.",
-    "Budget for joy. A life without planned pleasure leads to unplanned overspending.",
-    "One book, one mentor, one community can transform your financial trajectory.",
-    "Your future self is depending on the choices you make today.",
-    "There is no shame in a tight budget. There is wisdom in working with what you have.",
-    "Financial success is built with ordinary income and extraordinary habits.",
-    "The best financial decision you can make today: start.",
-    "Review, reflect, adjust. Your budget is a living document, not a sentence.",
-    "Automate your finances and then forget about them — except to review monthly.",
-    "Use your budget as a communication tool with your household — transparency builds trust.",
-    "The enemy of financial progress is inertia. Any action beats no action.",
-    "Celebrate every financial milestone — they reinforce the identity of someone who saves.",
-    "A written budget is 42% more likely to be followed than a mental one.",
-    "Recognise that financial behaviour is emotional — address the emotions, not just the numbers.",
-    "Wealth built on debt is fragile. Wealth built on savings and investment is durable.",
-    "A strong financial foundation gives you the freedom to take career and life risks.",
-    "Use financial tools that match your personality — systems you hate don't get followed.",
-    "Time is the one financial resource you can never get back. Use it wisely.",
-    "The compound effect works on habits too — small daily financial actions reshape everything.",
-    "Surround yourself with financially responsible people — mindsets are contagious.",
-    "Know the difference between price and value — cheap now can be expensive later.",
-    "Financial independence is not a destination, it's a daily practice.",
-    "Your spending reveals your real values — look at your bank statement as a mirror.",
-    "Master one financial habit at a time — adding too many at once leads to none.",
-    "Stay humble about financial projections — plan for the unexpected.",
-    "Keep a 'financial wins' list — reviewing it builds confidence and momentum.",
-    "True wealth is having more time than money obligations.",
-    "Remember why you started — revisit your financial 'why' when motivation fades."
-  ]
-};
-
-const tipTextEl   = document.getElementById('tipText');
-const tipBadge    = document.getElementById('tipBadge');
-const tipCountEl  = document.getElementById('tipCount');
-const tipPrevBtn  = document.getElementById('tipPrev');
-const tipNextBtn  = document.getElementById('tipNext');
-const tipProgress = document.getElementById('tipProgress');
-
-let tipPool = [], tipPoolLabel = 'general', tipIndex = 0, tipTimer = null;
-
-function buildPool() {
-  const monthly = rawIncome * toMonthly[freq];
-  const pool = [];
-  let label = 'general';
-  if (ratios.savings < 10)      { pool.push(...TIPS.savings); label = 'savings'; }
-  else if (ratios.needs > 58)   { pool.push(...TIPS.needs);   label = 'needs';   }
-  else if (ratios.wants > 38)   { pool.push(...TIPS.wants);   label = 'wants';   }
-  else if (ratios.savings > 28) { pool.push(...TIPS.savings); label = 'savings'; }
-  else                          { pool.push(...TIPS.general); label = 'general'; }
-  if (monthly < 2500)      pool.push(...TIPS.income_low);
-  else if (monthly > 7500) pool.push(...TIPS.income_high);
-  pool.push(...TIPS.general.slice(0, 30));
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  tipPoolLabel = label;
-  return pool;
-}
-
-function setBadge(label) {
-  tipBadge.textContent = label.charAt(0).toUpperCase() + label.slice(1);
-  tipBadge.className   = 'tip-category-badge ' + label;
-}
-
-function restartProgress() {
-  tipProgress.style.animation = 'none';
-  void tipProgress.offsetWidth;
-  tipProgress.style.animation = 'tipProgress 15s linear forwards';
-}
-
-function showTip(index, animate) {
-  if (!tipPool.length) return;
-  const tip = tipPool[index % tipPool.length];
-  if (animate) {
-    tipTextEl.classList.add('fade-out');
-    setTimeout(() => {
-      tipTextEl.textContent = tip;
-      tipTextEl.classList.remove('fade-out');
-      tipTextEl.classList.add('fade-in');
-      restartProgress();
-    }, 320);
-  } else {
-    tipTextEl.textContent = tip;
-    tipTextEl.classList.add('fade-in');
-    restartProgress();
-  }
-  tipCountEl.textContent = `Tip ${(index % tipPool.length) + 1} of ${tipPool.length}`;
-  setBadge(tipPoolLabel);
-}
-
-function startTimer() {
-  clearInterval(tipTimer);
-  tipTimer = setInterval(() => { tipIndex = (tipIndex + 1) % tipPool.length; showTip(tipIndex, true); }, 15000);
-}
-
-function rebuildTipPool() {
-  clearInterval(tipTimer);
-  tipPool = buildPool(); tipIndex = 0;
-  showTip(tipIndex, false); startTimer();
-}
-
-tipNextBtn.addEventListener('click', () => { clearInterval(tipTimer); tipIndex = (tipIndex + 1) % tipPool.length; showTip(tipIndex, true); startTimer(); });
-tipPrevBtn.addEventListener('click', () => { clearInterval(tipTimer); tipIndex = (tipIndex - 1 + tipPool.length) % tipPool.length; showTip(tipIndex, true); startTimer(); });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────────────────────────────────────
-render();
-rebuildTipPool();
+}());
 </script>
 </body>
 </html>
