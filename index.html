@@ -212,8 +212,8 @@
 
 /* CHARTS */
 #bst .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
-@media(max-width:560px){#bst .charts-grid{grid-template-columns:1fr}}
-#bst .chart-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem;width:100%}
+@media(max-width:640px){#bst .charts-grid{grid-template-columns:1fr}}
+#bst .chart-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem;width:100%;min-width:0;overflow:hidden}
 #bst .chart-wrap{position:relative;width:100%}
 #bst .donut-wrap{height:180px}
 #bst .bar-wrap{height:180px}
@@ -221,10 +221,10 @@
 #bst .dc-lbl{font-size:.58rem;color:var(--g5);text-transform:uppercase;letter-spacing:.07em}
 #bst .dc-val{font-size:.9rem;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums;max-width:70px;word-break:break-word;line-height:1.2}
 #bst .leg{margin-top:10px;display:flex;flex-direction:column;gap:5px}
-#bst .leg-row{display:flex;align-items:center;justify-content:space-between;font-size:.75rem}
-#bst .leg-l{display:flex;align-items:center;gap:6px;color:var(--g6)}
+#bst .leg-row{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;gap:4px}
+#bst .leg-l{display:flex;align-items:center;gap:6px;color:var(--g6);flex:1;min-width:0;overflow:hidden;white-space:nowrap}
 #bst .leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
-#bst .leg-v{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
+#bst .leg-v{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
 
 /* SLIDERS */
 #bst .sliders-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.25rem 1.4rem;width:100%}
@@ -265,9 +265,9 @@
 @media(max-width:600px){#bst .prog-card{padding:.9rem 1rem}}
 #bst .pb-row{margin-bottom:12px}
 #bst .pb-row:last-child{margin-bottom:0}
-#bst .pb-top{display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:6px}
-#bst .pb-lbl{font-weight:500;color:var(--g7)}
-#bst .pb-val{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
+#bst .pb-top{display:flex;justify-content:space-between;align-items:baseline;font-size:.79rem;margin-bottom:6px;gap:8px}
+#bst .pb-lbl{font-weight:500;color:var(--g7);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bst .pb-val{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
 #bst .pb-bg{height:9px;background:var(--g2);border-radius:100px;overflow:hidden}
 #bst .pb-fill{height:100%;border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1);position:relative}
 #bst .pb-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3));border-radius:100px}
@@ -283,9 +283,10 @@
 #bst .bs-pill.w{background:var(--wl);color:var(--w2)}
 #bst .bs-pill.sv{background:var(--sl);color:var(--s2)}
 #bst .bs-tot{margin-left:auto;font-size:.8rem;font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
-#bst .bs-item{display:flex;justify-content:space-between;align-items:center;font-size:.77rem;padding:5px 0;color:var(--g6);border-bottom:1px solid var(--g2)}
+#bst .bs-item{display:flex;justify-content:space-between;align-items:center;font-size:.77rem;padding:5px 0;color:var(--g6);border-bottom:1px solid var(--g2);gap:8px}
 #bst .bs-item:last-child{border-bottom:none}
-#bst .bs-amt{font-weight:600;color:var(--g7);font-variant-numeric:tabular-nums}
+#bst .bs-item>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bst .bs-amt{font-weight:600;color:var(--g7);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
 
 /* ANNUAL */
 #bst .ann-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem 1.4rem;width:100%}
@@ -308,7 +309,7 @@
 #bst .ann-note strong{color:var(--g8)}
 </style>
 </head>
-<body>
+<body style="margin:0;padding:0;overflow-x:hidden">
 <div id="bst">
 
 <!-- HERO -->
@@ -529,7 +530,7 @@
   <div class="bkd-card">
     <div class="sec-head" style="margin-bottom:.85rem"><span class="sec-lbl">Spending guide</span><div class="sec-line"></div></div>
     <div class="bs-sec">
-      <div class="bs-hdr"><span class="bs-pill n">&#x1F3E0; Needs</span><span class="bs-tot" id="bsN">&#8212;</span></div>
+      <div class="bs-hdr"><span class="bs-pill n">Needs</span><span class="bs-tot" id="bsN">&#8212;</span></div>
       <div class="bs-item"><span>Housing (rent / mortgage)</span><span class="bs-amt" id="b1">&#8212;</span></div>
       <div class="bs-item"><span>Groceries &amp; food</span><span class="bs-amt" id="b2">&#8212;</span></div>
       <div class="bs-item"><span>Transport &amp; fuel</span><span class="bs-amt" id="b3">&#8212;</span></div>
@@ -537,7 +538,7 @@
       <div class="bs-item"><span>Insurance</span><span class="bs-amt" id="b5">&#8212;</span></div>
     </div>
     <div class="bs-sec">
-      <div class="bs-hdr"><span class="bs-pill w">&#x1F389; Wants</span><span class="bs-tot" id="bsW">&#8212;</span></div>
+      <div class="bs-hdr"><span class="bs-pill w">Wants</span><span class="bs-tot" id="bsW">&#8212;</span></div>
       <div class="bs-item"><span>Dining out &amp; cafes</span><span class="bs-amt" id="b6">&#8212;</span></div>
       <div class="bs-item"><span>Entertainment &amp; streaming</span><span class="bs-amt" id="b7">&#8212;</span></div>
       <div class="bs-item"><span>Shopping &amp; clothing</span><span class="bs-amt" id="b8">&#8212;</span></div>
@@ -545,7 +546,7 @@
       <div class="bs-item"><span>Hobbies &amp; fitness</span><span class="bs-amt" id="b10">&#8212;</span></div>
     </div>
     <div class="bs-sec">
-      <div class="bs-hdr"><span class="bs-pill sv">&#x1F4B0; Savings</span><span class="bs-tot" id="bsS">&#8212;</span></div>
+      <div class="bs-hdr"><span class="bs-pill sv">Savings</span><span class="bs-tot" id="bsS">&#8212;</span></div>
       <div class="bs-item"><span>Emergency fund (3&ndash;6 mo)</span><span class="bs-amt" id="b11">&#8212;</span></div>
       <div class="bs-item"><span>Investments / stocks</span><span class="bs-amt" id="b12">&#8212;</span></div>
       <div class="bs-item"><span>Retirement / pension</span><span class="bs-amt" id="b13">&#8212;</span></div>
@@ -793,7 +794,7 @@ function update(){
   if(total===100){stEl.className='tot-st t-ok';stEl.textContent='✓ 100% — perfectly balanced';}
   else{stEl.className='tot-st t-err';stEl.textContent='⚠ '+total+'% — adjust to reach 100%';}
   /* Legend + donut center */
-  st('lgN',fmt(N));st('lgW',fmt(W));st('lgS',fmt(Sv));
+  st('lgN',fmtShort(N));st('lgW',fmtShort(W));st('lgS',fmtShort(Sv));
   st('dcVal',fmtShort(monthly));
   /* Progress bars */
   document.getElementById('pbN').style.width=Math.min(np,100)+'%';
