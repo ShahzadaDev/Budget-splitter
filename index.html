@@ -1,1150 +1,850 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Budget Splitter — 50/30/20 Rule</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <style>
-#budget-app,#budget-app::before,#budget-app::after,
-#budget-app *,#budget-app *::before,#budget-app *::after{box-sizing:border-box!important}
-#budget-app *{font-family:inherit;line-height:inherit}
-#budget-app button,#budget-app input,#budget-app select,#budget-app textarea{
-  font-family:inherit;font-size:inherit;line-height:inherit;color:inherit;
-  background:none;border:none;outline:none;appearance:none;-webkit-appearance:none}
-#budget-app a{color:inherit;text-decoration:none}
-#budget-app img,#budget-app canvas,#budget-app svg{display:block;max-width:100%}
-
-#budget-app{
-  --n:#6366f1;--w:#ec4899;--s:#10b981;
-  --bg:#0b0b18;--sur:#13132a;--sur2:#1b1b36;--sur3:#232348;
-  --bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.12);
-  --tx:#e8e8f0;--mu:#7878a0;
-  --r:20px;--rs:12px;
-  position:relative;min-height:100vh;width:100%;
-  background:var(--bg);color:var(--tx);
-  font-family:'Inter',system-ui,-apple-system,sans-serif;
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>Budget Splitter 50 / 30 / 20 Rule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+#bst,#bst *,#bst *::before,#bst *::after{box-sizing:border-box;margin:0;padding:0}
+#bst{
+  --n:#3b82f6;--n1:#2563eb;--n2:#1d4ed8;--nl:#dbeafe;--nll:#eff6ff;
+  --w:#10b981;--w1:#059669;--w2:#047857;--wl:#d1fae5;--wll:#f0fdf4;
+  --s:#8b5cf6;--s1:#7c3aed;--s2:#6d28d9;--sl:#ede9fe;--sll:#f5f3ff;
+  --dark:#0a0f1e;--dark2:#0f172a;--dark3:#1e293b;
+  --g1:#f8fafc;--g2:#f1f5f9;--g3:#e2e8f0;--g4:#cbd5e1;
+  --g5:#94a3b8;--g6:#64748b;--g7:#475569;--g8:#334155;
+  --g9:#1e293b;--g10:#0f172a;
+  --white:#fff;
+  --r:14px;--rs:10px;--rxs:8px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.06);
+  --sh2:0 8px 24px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.06);
+  font-family:'Inter',system-ui,sans-serif;
   font-size:16px;line-height:1.5;
-  display:flex;flex-direction:column;align-items:center;
-  padding:2.25rem 1.25rem 0;overflow-x:hidden
+  color:var(--g9);background:var(--g1);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
 }
 
-/* glow */
-#budget-app .g{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
+#bst .wrap{max-width:880px;margin:0 auto;width:100%}
+
+/* HERO */
+#bst .hero{
+  background:linear-gradient(135deg,#060d1f 0%,#0f1b3d 45%,#0d1a35 70%,#060d1f 100%);
+  padding:2.5rem 1.5rem 2rem;text-align:center;
+  position:relative;overflow:hidden;width:100%;
+}
+#bst .hero::before{
+  content:'';position:absolute;inset:0;
   background:
-    radial-gradient(ellipse 70% 45% at 15% 5%,rgba(99,102,241,.16) 0%,transparent 65%),
-    radial-gradient(ellipse 55% 40% at 85% 85%,rgba(16,185,129,.11) 0%,transparent 65%),
-    radial-gradient(ellipse 45% 35% at 65% 25%,rgba(236,72,153,.09) 0%,transparent 60%)
+    radial-gradient(ellipse 70% 50% at 25% 40%,rgba(59,130,246,.2) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 70% at 75% 30%,rgba(139,92,246,.15) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 60% at 60% 80%,rgba(16,185,129,.1) 0%,transparent 50%);
+  pointer-events:none;
 }
-#budget-app>*:not(.g){position:relative;z-index:1}
+#bst .hero::after{
+  content:'';position:absolute;top:-40%;left:-10%;width:120%;height:120%;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events:none;
+}
+#bst .hero-inner{position:relative;z-index:1;max-width:600px;margin:0 auto}
+#bst .hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:100px;padding:5px 14px;
+  font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.65);margin-bottom:1.1rem;backdrop-filter:blur(10px);
+}
+#bst .hero-title{
+  font-size:clamp(1.8rem,6vw,2.8rem);font-weight:800;
+  letter-spacing:-.03em;line-height:1.1;color:#fff;margin-bottom:.6rem;
+}
+#bst .hero-title .grad{
+  display:block;
+  background:linear-gradient(100deg,#60a5fa 0%,#a78bfa 50%,#34d399 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  padding-bottom:.05em;
+}
+#bst .hero-sub{font-size:.9rem;color:rgba(255,255,255,.45);font-weight:400;letter-spacing:.01em;margin-bottom:1.6rem}
+#bst .loc-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:var(--rs);padding:.55rem 1rem;
+  font-size:.8rem;backdrop-filter:blur(8px);color:rgba(255,255,255,.8);
+}
+#bst .flag-box{font-size:1.2rem;line-height:1}
+#bst .loc-info{text-align:left}
+#bst .loc-name{font-weight:600;color:#fff;line-height:1.2}
+#bst .loc-cur{font-size:.68rem;color:rgba(255,255,255,.45);margin-top:1px}
 
-/* ── country bar ── */
-#budget-app .cbar{
-  display:flex;align-items:center;justify-content:center;
-  flex-wrap:wrap;gap:.6rem;
-  margin-bottom:1.75rem;width:100%;max-width:840px;
-  animation:fdown .5s ease both
+/* INCOME ROW */
+#bst .income-wrap{background:#fff;border-bottom:1px solid var(--g3);padding:1.1rem 1.5rem;width:100%}
+#bst .income-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+@media(max-width:600px){
+  #bst .income-wrap{padding:.9rem 1rem}
+  #bst .income-inner{flex-wrap:wrap;gap:8px}
 }
-#budget-app .cbar label{
-  font-size:.72rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--mu)
-}
-#budget-app .swrap{position:relative;display:inline-flex;align-items:center}
-#budget-app .sflag{
-  position:absolute;left:.75rem;font-size:1.1rem;
-  pointer-events:none;z-index:1;line-height:1
-}
-#budget-app .swrap::after{
-  content:'▾';position:absolute;right:.8rem;
-  color:var(--mu);pointer-events:none;font-size:.75rem
-}
-#budget-app #ba-country{
-  background:var(--sur2)!important;
-  border:1.5px solid var(--bd2)!important;
-  border-radius:10px!important;color:var(--tx)!important;
-  font-size:.85rem!important;font-weight:600!important;
-  padding:.6em 2.6em .6em 3rem!important;
-  cursor:pointer;min-width:215px;
-  transition:border-color .2s,box-shadow .2s
-}
-#budget-app #ba-country:focus{
-  border-color:var(--n)!important;
-  box-shadow:0 0 0 3px rgba(99,102,241,.18)!important
-}
-#budget-app #ba-country option{background:#1b1b36;color:#e8e8f0}
-#budget-app .ctag{
-  background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
-  color:#a5a8ff;font-size:.74rem;font-weight:700;
-  padding:.35em .85em;border-radius:99px;letter-spacing:.06em;transition:all .25s
-}
-
-/* ── header ── */
-#budget-app header{
-  text-align:center;margin-bottom:2.25rem;
-  width:100%;max-width:840px;animation:fdown .6s ease both
-}
-#budget-app .badge{
-  display:inline-flex;align-items:center;gap:.45rem;
-  background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(236,72,153,.2));
-  border:1px solid rgba(99,102,241,.35);color:#a5a8ff;
-  font-size:.7rem;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;padding:.4em 1em;
-  border-radius:100px;margin-bottom:1rem
-}
-#budget-app .bdot{
-  width:5px;height:5px;border-radius:50%;
-  background:var(--n);animation:blink 2s ease-in-out infinite
-}
-#budget-app h1{
-  font-size:clamp(2rem,6vw,3.2rem);font-weight:800;
-  letter-spacing:-.035em;line-height:1.1;
-  background:linear-gradient(135deg,#fff 20%,#c4c6ff 60%,#a5a8ff 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;margin:0
-}
-#budget-app header p{
-  margin-top:.75rem;color:var(--mu);font-size:.95rem;
-  max-width:440px;margin-inline:auto;line-height:1.65
-}
-
-/* ── main card ── */
-#budget-app .card{
-  background:var(--sur);border:1px solid var(--bd);
-  border-radius:var(--r);padding:2rem;
-  width:100%;max-width:840px;
-  box-shadow:0 4px 32px rgba(0,0,0,.35);
-  animation:fup .6s ease both;animation-delay:.1s
-}
-
-/* ── income ── */
-#budget-app .inc-sec{margin-bottom:2rem}
-#budget-app .slbl{
-  display:block;font-size:.72rem;font-weight:700;
-  letter-spacing:.08em;text-transform:uppercase;
-  color:var(--mu);margin-bottom:.65rem
-}
-#budget-app .iwrap{position:relative;display:flex;align-items:center}
-#budget-app .ipfx{
-  position:absolute;left:1.1rem;font-size:1.05rem;font-weight:700;
-  color:var(--mu);pointer-events:none;
-  transition:color .2s;max-width:3.5rem;
-  white-space:nowrap;z-index:1
-}
-#budget-app #ba-income{
-  width:100%!important;background:var(--sur2)!important;
-  border:1.5px solid var(--bd2)!important;
-  border-radius:var(--rs)!important;
-  padding:1rem 1rem 1rem 3.4rem!important;
-  font-size:1.7rem!important;font-weight:800!important;
-  color:var(--tx)!important;letter-spacing:-.02em;
+#bst .inc-input-box{
+  display:flex;align-items:center;
+  background:var(--g1);border:2px solid var(--g3);
+  border-radius:var(--rs);overflow:hidden;
   transition:border-color .2s,box-shadow .2s;
-  -moz-appearance:textfield!important
+  flex-shrink:0;min-width:160px;max-width:240px;
 }
-#budget-app #ba-income::-webkit-inner-spin-button,
-#budget-app #ba-income::-webkit-outer-spin-button{-webkit-appearance:none}
-#budget-app #ba-income:focus{
-  border-color:var(--n)!important;
-  box-shadow:0 0 0 3px rgba(99,102,241,.18)!important
+#bst .inc-input-box:focus-within{border-color:var(--n);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+#bst .inc-sym-tab{
+  padding:0 10px 0 12px;font-size:.95rem;font-weight:700;color:var(--g6);
+  white-space:nowrap;background:var(--g2);border-right:1px solid var(--g3);
+  height:100%;display:flex;align-items:center;min-width:fit-content;flex-shrink:0;
+  font-family:'Inter',sans-serif;
 }
-#budget-app .iwrap:focus-within .ipfx{color:var(--n)}
-#budget-app .frow{display:flex;gap:.5rem;margin-top:.75rem}
-#budget-app .fbtn{
-  flex:1;background:var(--sur2)!important;
-  border:1.5px solid var(--bd)!important;
-  border-radius:8px!important;color:var(--mu)!important;
-  font-size:.8rem!important;font-weight:600!important;
-  padding:.62em 0!important;cursor:pointer;
-  transition:all .15s;text-align:center;min-height:40px
+#bst #incomeInput{
+  min-width:60px;max-width:150px;width:auto;
+  padding:.75rem .75rem;font-size:1.25rem;font-weight:700;
+  font-family:'Inter',sans-serif;background:transparent;border:none;outline:none;
+  color:var(--g9);-moz-appearance:textfield;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
 }
-#budget-app .fbtn.act{
-  background:rgba(99,102,241,.14)!important;
-  border-color:rgba(99,102,241,.5)!important;
-  color:#c0c3ff!important
+#bst #incomeInput::-webkit-outer-spin-button,
+#bst #incomeInput::-webkit-inner-spin-button{-webkit-appearance:none}
+#bst .select-group{display:flex;gap:8px;align-items:center;flex:1;min-width:0}
+@media(max-width:600px){
+  #bst .inc-input-box{max-width:100%;flex:1;min-width:0;width:100%}
+  #bst #incomeInput{min-width:40px;max-width:none;flex:1}
+  #bst .select-group{width:100%;flex:none}
+  #bst #countrySelect{flex:1;min-width:0}
 }
-#budget-app .fbtn:not(.act):hover{
-  border-color:var(--bd2)!important;color:var(--tx)!important
+#bst .sel-wrap{position:relative;display:flex;align-items:center;flex-shrink:0}
+#bst .sel-wrap.country{flex:1;min-width:0}
+#bst .sel-icon{position:absolute;left:10px;width:14px;height:14px;color:var(--g5);pointer-events:none;z-index:1;flex-shrink:0}
+#bst .bst-sel{
+  appearance:none;-webkit-appearance:none;width:100%;
+  padding:.72rem .85rem .72rem 30px;
+  font-size:.82rem;font-weight:500;font-family:'Inter',sans-serif;
+  background:var(--g1);border:2px solid var(--g3);border-radius:var(--rs);
+  color:var(--g8);cursor:pointer;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#bst .bst-sel:focus{border-color:var(--n);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+#bst #countrySelect{min-width:155px}
+#bst #periodSelect{min-width:105px;flex-shrink:0}
+#bst .period-note{
+  font-size:.72rem;color:var(--g5);padding:.4rem 1.5rem .55rem;
+  background:#fff;border-bottom:1px solid var(--g3);text-align:center;
+}
+@media(max-width:600px){#bst .period-note{padding:.4rem 1rem .45rem}}
+
+/* CONTENT */
+#bst .content{padding:1.5rem;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem;width:100%}
+@media(max-width:600px){#bst .content{padding:1rem;gap:1rem}}
+
+/* SECTION HEAD */
+#bst .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+#bst .sec-lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g5)}
+#bst .sec-line{flex:1;height:1px;background:var(--g3)}
+
+/* ALLOC CARDS */
+#bst .alloc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+@media(max-width:680px){#bst .alloc-grid{grid-template-columns:1fr;gap:8px}}
+
+#bst .ac{
+  background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);
+  box-shadow:var(--sh);overflow:hidden;transition:transform .18s,box-shadow .18s;width:100%;
+}
+#bst .ac:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+
+/* ── Desktop card (vertical) ── */
+@media(min-width:681px){
+  #bst .ac-stripe{height:4px;width:100%}
+  #bst .ac-body{padding:1.1rem 1.1rem .9rem}
+  #bst .ac-top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem}
+  #bst .ac-icon-wrap{display:flex;align-items:center;gap:8px}
+  #bst .ac-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+  #bst .ac-meta{}
+  #bst .ac-name{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--g5)}
+  #bst .ac-pct{font-size:.8rem;font-weight:700;margin-top:1px}
+  #bst .ac-amount{font-size:1.35rem;font-weight:800;color:var(--g9);letter-spacing:-.02em;font-variant-numeric:tabular-nums;word-break:break-word}
+  #bst .ac-day{font-size:.7rem;color:var(--g5);margin-top:3px}
+  #bst .ac-bar{height:4px;background:var(--g2);border-radius:100px;overflow:hidden;margin:.75rem 0 .6rem}
+  #bst .ac-bar-fill{height:100%;border-radius:100px;transition:width .4s ease}
+  #bst .ac-desc{font-size:.71rem;color:var(--g5);line-height:1.55;padding-top:.6rem;border-top:1px solid var(--g2)}
+  /* FIX: hide mobile-only elements on desktop */
+  #bst .ac-body>.ac-icon,#bst .ac-body>.ac-mid,#bst .ac-body>.ac-right{display:none}
 }
 
-/* ── visual row ── */
-#budget-app .vrow{
-  display:grid;grid-template-columns:190px 1fr;
-  gap:2rem;align-items:center;margin-bottom:2rem
-}
-#budget-app .dwrap{
-  position:relative;width:175px;height:175px;margin:0 auto;flex-shrink:0
-}
-#budget-app #ba-donut{filter:drop-shadow(0 0 28px rgba(99,102,241,.28))}
-
-/* ── buckets (list layout) ── */
-#budget-app .bkts{display:flex;flex-direction:column;gap:.7rem}
-#budget-app .bkt{
-  background:var(--sur2);border:1px solid var(--bd);
-  border-radius:var(--rs);padding:.95rem 1.1rem;
-  display:flex;align-items:center;gap:.9rem;
-  position:relative;overflow:hidden;
-  transition:transform .18s,box-shadow .18s
-}
-#budget-app .bkt:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
-#budget-app .bkt.bn{border-left:3px solid var(--n)}
-#budget-app .bkt.bw{border-left:3px solid var(--w)}
-#budget-app .bkt.bs{border-left:3px solid var(--s)}
-#budget-app .bico{
-  width:38px;height:38px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.15rem;flex-shrink:0
-}
-#budget-app .bn .bico{background:rgba(99,102,241,.15)}
-#budget-app .bw .bico{background:rgba(236,72,153,.15)}
-#budget-app .bs .bico{background:rgba(16,185,129,.15)}
-#budget-app .bbody{flex:1;min-width:0}
-#budget-app .btitle{
-  font-size:.68rem;font-weight:700;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--mu);margin-bottom:.12rem
-}
-#budget-app .bamt{
-  font-size:1.1rem;font-weight:800;letter-spacing:-.02em;
-  color:var(--tx);word-break:break-all;line-height:1.2
-}
-#budget-app .bdesc{font-size:.67rem;color:var(--mu);margin-top:.22rem;line-height:1.4}
-#budget-app .bright{text-align:right;flex-shrink:0}
-#budget-app .bpct{
-  font-size:1.45rem;font-weight:800;letter-spacing:-.04em;line-height:1
-}
-#budget-app .bn .bpct{color:#a5a8ff}
-#budget-app .bw .bpct{color:#f9a8d4}
-#budget-app .bs .bpct{color:#6ee7b7}
-#budget-app .btrack{
-  height:3px;background:var(--bd);
-  border-radius:99px;margin-top:.55rem;overflow:hidden
-}
-#budget-app .bfill{
-  height:100%;border-radius:99px;
-  transition:width .55s cubic-bezier(.34,1.56,.64,1)
-}
-#budget-app .bn .bfill{background:var(--n)}
-#budget-app .bw .bfill{background:var(--w)}
-#budget-app .bs .bfill{background:var(--s)}
-
-/* ── divider ── */
-#budget-app .div{height:1px;background:var(--bd);margin:1.75rem 0}
-
-/* ── sliders ── */
-#budget-app .slsec{margin-bottom:1.75rem}
-#budget-app .shdr{
-  display:flex;align-items:center;
-  justify-content:space-between;margin-bottom:1.2rem
-}
-#budget-app .stitle{
-  font-size:.72rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--mu);margin:0
-}
-#budget-app .srow{
-  display:flex;align-items:center;gap:.85rem;margin-bottom:.95rem
-}
-#budget-app .slbl2{
-  width:68px;font-size:.8rem;font-weight:600;
-  flex-shrink:0;display:flex;align-items:center;gap:.4rem
-}
-#budget-app .sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-#budget-app .srow input[type=range]{
-  flex:1;-webkit-appearance:none!important;appearance:none!important;
-  height:6px!important;border-radius:99px!important;
-  outline:none!important;cursor:pointer;border:none!important;
-  background:none!important;padding:0!important
-}
-#budget-app #ba-sl-needs{background:linear-gradient(to right,var(--n) var(--p,50%),var(--sur3) var(--p,50%))!important}
-#budget-app #ba-sl-wants{background:linear-gradient(to right,var(--w) var(--p,30%),var(--sur3) var(--p,30%))!important}
-#budget-app #ba-sl-savings{background:linear-gradient(to right,var(--s) var(--p,20%),var(--sur3) var(--p,20%))!important}
-#budget-app .srow input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none!important;width:20px!important;height:20px!important;
-  border-radius:50%!important;background:#fff!important;cursor:pointer;
-  box-shadow:0 0 0 3px rgba(255,255,255,.12),0 2px 10px rgba(0,0,0,.45)!important;
-  transition:transform .12s
-}
-#budget-app .srow input[type=range]::-webkit-slider-thumb:active{transform:scale(1.25)!important}
-#budget-app .srow input[type=range]::-moz-range-thumb{
-  width:20px!important;height:20px!important;border-radius:50%!important;
-  background:#fff!important;border:none!important;cursor:pointer;
-  box-shadow:0 0 0 3px rgba(255,255,255,.12),0 2px 10px rgba(0,0,0,.45)!important
-}
-#budget-app .sval{
-  width:40px;text-align:right;
-  font-size:.88rem;font-weight:700;flex-shrink:0
-}
-#budget-app .sumrow{
-  display:flex;align-items:center;justify-content:flex-end;
-  gap:.5rem;font-size:.78rem;color:var(--mu);margin-top:.2rem
-}
-#budget-app .sumbadge{
-  font-size:.78rem;font-weight:700;padding:.22em .7em;
-  border-radius:99px;background:rgba(16,185,129,.15);
-  color:#6ee7b7;transition:all .2s
-}
-#budget-app .sumbadge.warn{background:rgba(251,113,133,.15);color:#fda4af}
-#budget-app .rbtn{
-  background:none!important;border:1px solid var(--bd2)!important;
-  color:var(--mu)!important;font-size:.72rem!important;font-weight:600!important;
-  padding:.4em .9em!important;border-radius:99px!important;
-  cursor:pointer;transition:all .15s;letter-spacing:.04em
-}
-#budget-app .rbtn:hover{border-color:var(--n)!important;color:#c0c3ff!important}
-
-/* ── projection ── */
-#budget-app .proj{
-  background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(16,185,129,.05));
-  border:1px solid rgba(99,102,241,.15);
-  border-radius:var(--rs);padding:1.25rem 1.4rem;margin-bottom:1.75rem
-}
-#budget-app .ptitle{
-  font-size:.68rem;font-weight:700;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--mu);margin-bottom:1rem
-}
-#budget-app .pgrid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem
-}
-#budget-app .pitem{
-  background:var(--sur2);border-radius:10px;
-  padding:.8rem 1rem;border:1px solid var(--bd)
-}
-#budget-app .pilbl{
-  font-size:.66rem;font-weight:600;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--mu);margin-bottom:.3rem
-}
-#budget-app .pival{
-  font-size:.95rem;font-weight:800;
-  color:var(--tx);letter-spacing:-.02em
-}
-#budget-app .pitem.pn .pival{color:#a5a8ff}
-#budget-app .pitem.pw .pival{color:#f9a8d4}
-#budget-app .pitem.ps .pival{color:#6ee7b7}
-
-/* ── tips ── */
-#budget-app .tiphdr{
-  display:flex;align-items:center;
-  justify-content:space-between;margin-bottom:.85rem
-}
-#budget-app .tiphdr h2{
-  font-size:.72rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--mu);
-  display:flex;align-items:center;gap:.45rem;margin:0
-}
-#budget-app .tipbadge{
-  font-size:.67rem;font-weight:700;padding:.22em .7em;
-  border-radius:99px;letter-spacing:.06em;text-transform:uppercase;transition:all .3s
-}
-#budget-app .tipbadge.bn{background:rgba(99,102,241,.15);color:#a5a8ff;border:1px solid rgba(99,102,241,.25)}
-#budget-app .tipbadge.bw{background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.25)}
-#budget-app .tipbadge.bs{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.25)}
-#budget-app .tipbadge.bg{background:rgba(251,191,36,.12);color:#fcd34d;border:1px solid rgba(251,191,36,.2)}
-#budget-app .tipbox{
-  background:var(--sur2);border:1px solid var(--bd);
-  border-radius:var(--rs);padding:1.2rem 1.3rem 1rem;
-  min-height:90px;overflow:hidden
-}
-#budget-app .tiptxt{
-  font-size:.9rem;line-height:1.7;color:var(--tx);
-  transition:opacity .35s ease,transform .35s ease
-}
-#budget-app .tiptxt.out{opacity:0;transform:translateY(-8px)}
-#budget-app .tipbar-t{
-  height:2px;background:var(--bd);
-  border-radius:99px;margin-top:.9rem;overflow:hidden
-}
-#budget-app .tipbar-f{
-  height:100%;border-radius:99px;
-  background:linear-gradient(90deg,var(--n),var(--w));
-  animation:tipbar 15s linear forwards
-}
-#budget-app .tipnav{
-  display:flex;align-items:center;
-  justify-content:space-between;margin-top:.65rem
-}
-#budget-app .tipcnt{font-size:.68rem;color:var(--mu);font-weight:600}
-#budget-app .tipbtns{display:flex;gap:.4rem}
-#budget-app .tipbtn{
-  background:var(--sur2)!important;border:1px solid var(--bd2)!important;
-  color:var(--mu)!important;width:30px!important;height:30px!important;
-  border-radius:50%!important;font-size:.8rem!important;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:all .15s
-}
-#budget-app .tipbtn:hover{
-  border-color:var(--n)!important;color:#c0c3ff!important;
-  background:rgba(99,102,241,.1)!important
-}
-
-/* ── disclaimer ── */
-#budget-app .disc{
-  text-align:center;font-size:.7rem;color:var(--mu);line-height:1.6;
-  border-top:1px solid var(--bd);padding-top:1.25rem;margin-top:1.75rem
-}
-
-/* ── footer ── */
-#budget-app footer{
-  width:100%;max-width:840px;margin-top:2.5rem;
-  padding-bottom:3.5rem;text-align:center;
-  animation:fup .6s ease both;animation-delay:.25s
-}
-#budget-app .ftlbl{
-  font-size:.7rem;font-weight:700;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--mu);margin-bottom:.85rem
-}
-#budget-app .appsbtn{
-  display:inline-flex;align-items:center;gap:.6rem;
-  background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(236,72,153,.13));
-  border:1px solid rgba(99,102,241,.3)!important;
-  color:#c0c3ff!important;font-size:.95rem!important;font-weight:700!important;
-  padding:.85em 2em!important;border-radius:var(--rs)!important;
-  cursor:pointer;text-decoration:none!important;transition:all .22s
-}
-#budget-app .appsbtn:hover{
-  background:linear-gradient(135deg,rgba(99,102,241,.32),rgba(236,72,153,.22));
-  border-color:rgba(99,102,241,.55)!important;
-  transform:translateY(-2px);box-shadow:0 8px 32px rgba(99,102,241,.2)
-}
-#budget-app .arr{transition:transform .2s}
-#budget-app .appsbtn:hover .arr{transform:translateX(4px)}
-#budget-app .ftcopy{
-  font-size:.7rem;color:var(--mu);margin-top:2rem;
-  padding-top:1.25rem;border-top:1px solid var(--bd)
-}
-
-/* ── responsive ── */
+/* ── Mobile card (horizontal) ── */
 @media(max-width:680px){
-  #budget-app{padding:1.5rem 1rem 0}
-  #budget-app .card{padding:1.5rem 1.25rem;border-radius:16px}
-  #budget-app .vrow{grid-template-columns:1fr;gap:1.5rem}
-  #budget-app .dwrap{width:160px;height:160px}
-  #budget-app h1{font-size:clamp(1.8rem,8vw,2.5rem)}
-  #budget-app header p{font-size:.9rem}
-  #budget-app #ba-income{font-size:1.4rem!important;padding:.85rem .85rem .85rem 3rem!important}
-  #budget-app .div{margin:1.4rem 0}
-  #budget-app .slsec{margin-bottom:1.4rem}
-  #budget-app .proj{margin-bottom:1.4rem}
-  #budget-app .srow{gap:.6rem}
-  #budget-app .slbl2{width:60px;font-size:.75rem}
-  #budget-app .inc-sec{margin-bottom:1.5rem}
-}
-@media(max-width:500px){
-  #budget-app .pgrid{grid-template-columns:1fr;gap:.55rem}
-  #budget-app .bkts{gap:.6rem}
-  #budget-app .bkt{padding:.8rem .9rem}
-  #budget-app .bamt{font-size:1rem}
-  #budget-app .bpct{font-size:1.25rem}
-}
-@media(max-width:400px){
-  #budget-app .frow{flex-direction:column;gap:.4rem}
-  #budget-app .cbar{flex-direction:column;align-items:flex-start}
-  #budget-app #ba-country{min-width:180px}
+  #bst .ac{display:flex;align-items:stretch}
+  #bst .ac-stripe{width:4px;min-width:4px;height:auto;flex-shrink:0}
+  #bst .ac-body{flex:1;padding:.8rem .95rem;display:flex;align-items:center;gap:.75rem;min-width:0}
+  #bst .ac-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+  #bst .ac-top-row{display:none}
+  #bst .ac-mid{flex:1;min-width:0}
+  #bst .ac-name{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--g5)}
+  #bst .ac-pct{font-size:.75rem;font-weight:700}
+  #bst .ac-right{text-align:right;flex-shrink:0}
+  #bst .ac-right .ac-amount{font-size:1.1rem;font-weight:800;color:var(--g9);letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #bst .ac-right .ac-day{font-size:.65rem;color:var(--g5);margin-top:2px}
+  #bst .ac-bar{display:none}
+  #bst .ac-desc{display:none}
+  #bst .ac-meta{display:flex;align-items:center;gap:6px}
+  #bst .ac-icon-wrap{display:none}
+  /* FIX: hide desktop-only amount/day direct children on mobile */
+  #bst .ac-body>.ac-amount,#bst .ac-body>.ac-day{display:none}
 }
 
-/* ── keyframes ── */
-@keyframes fdown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fup{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-@keyframes tipbar{from{width:0}to{width:100%}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-  </style>
+#bst .ac.needs .ac-stripe{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+#bst .ac.wants .ac-stripe{background:linear-gradient(135deg,#10b981,#059669)}
+#bst .ac.savings .ac-stripe{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
+#bst .ac.needs .ac-icon{background:var(--nl)}
+#bst .ac.wants .ac-icon{background:var(--wl)}
+#bst .ac.savings .ac-icon{background:var(--sl)}
+#bst .ac.needs .ac-pct{color:var(--n1)}
+#bst .ac.wants .ac-pct{color:var(--w1)}
+#bst .ac.savings .ac-pct{color:var(--s1)}
+#bst .ac.needs .ac-bar-fill{background:linear-gradient(90deg,#3b82f6,#2563eb)}
+#bst .ac.wants .ac-bar-fill{background:linear-gradient(90deg,#10b981,#059669)}
+#bst .ac.savings .ac-bar-fill{background:linear-gradient(90deg,#8b5cf6,#7c3aed)}
+
+/* CHARTS */
+#bst .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+@media(max-width:560px){#bst .charts-grid{grid-template-columns:1fr}}
+#bst .chart-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem;width:100%}
+#bst .chart-wrap{position:relative;width:100%}
+#bst .donut-wrap{height:180px}
+#bst .bar-wrap{height:180px}
+#bst .donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+#bst .dc-lbl{font-size:.58rem;color:var(--g5);text-transform:uppercase;letter-spacing:.07em}
+#bst .dc-val{font-size:.9rem;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums;max-width:70px;word-break:break-word;line-height:1.2}
+#bst .leg{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+#bst .leg-row{display:flex;align-items:center;justify-content:space-between;font-size:.75rem}
+#bst .leg-l{display:flex;align-items:center;gap:6px;color:var(--g6)}
+#bst .leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+#bst .leg-v{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
+
+/* SLIDERS */
+#bst .sliders-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.25rem 1.4rem;width:100%}
+@media(max-width:600px){#bst .sliders-card{padding:1rem}}
+#bst .sl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;gap:8px;flex-wrap:wrap}
+#bst .sl-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--g5)}
+#bst .reset-btn{
+  font-size:.74rem;font-weight:600;color:var(--n1);
+  background:var(--nll);border:1.5px solid var(--nl);
+  border-radius:100px;padding:4px 13px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;letter-spacing:-.01em;
+}
+#bst .reset-btn:hover{background:var(--nl);transform:scale(1.02)}
+#bst .sl-row{display:grid;grid-template-columns:62px 1fr 42px;align-items:center;gap:10px;margin-bottom:14px}
+#bst .sl-row:last-of-type{margin-bottom:0}
+@media(max-width:360px){#bst .sl-row{grid-template-columns:50px 1fr 36px;gap:7px}}
+#bst .sl-lbl{font-size:.8rem;font-weight:600}
+#bst .sl-lbl.n{color:var(--n1)}
+#bst .sl-lbl.w{color:var(--w1)}
+#bst .sl-lbl.sv{color:var(--s1)}
+#bst .sl-pct{font-size:.88rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+#bst #vNeeds{color:var(--n1)}#bst #vWants{color:var(--w1)}#bst #vSavings{color:var(--s1)}
+#bst input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:100px;outline:none;cursor:pointer;transition:opacity .15s}
+#bst input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid currentColor;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .1s}
+#bst input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+#bst input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid currentColor;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+#bst #rNeeds{color:var(--n1)}#bst #rWants{color:var(--w1)}#bst #rSavings{color:var(--s1)}
+#bst .tot-wrap{margin-top:16px}
+#bst .tot-bg{height:7px;background:var(--g2);border-radius:100px;overflow:hidden;margin-bottom:7px;display:flex}
+#bst .tbn{background:#3b82f6;height:100%;transition:width .2s}
+#bst .tbw{background:#10b981;height:100%;transition:width .2s}
+#bst .tbs{background:#8b5cf6;height:100%;transition:width .2s}
+#bst .tot-st{font-size:.76rem;font-weight:600}
+#bst .t-ok{color:var(--w1)}#bst .t-err{color:#dc2626}
+
+/* PROGRESS */
+#bst .prog-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem 1.4rem;width:100%}
+@media(max-width:600px){#bst .prog-card{padding:.9rem 1rem}}
+#bst .pb-row{margin-bottom:12px}
+#bst .pb-row:last-child{margin-bottom:0}
+#bst .pb-top{display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:6px}
+#bst .pb-lbl{font-weight:500;color:var(--g7)}
+#bst .pb-val{font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
+#bst .pb-bg{height:9px;background:var(--g2);border-radius:100px;overflow:hidden}
+#bst .pb-fill{height:100%;border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1);position:relative}
+#bst .pb-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3));border-radius:100px}
+
+/* BREAKDOWN */
+#bst .bkd-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem 1.4rem;width:100%}
+@media(max-width:600px){#bst .bkd-card{padding:.9rem 1rem}}
+#bst .bs-sec{margin-bottom:.9rem}
+#bst .bs-sec:last-child{margin-bottom:0}
+#bst .bs-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:7px;border-bottom:1.5px solid var(--g2)}
+#bst .bs-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:.69rem;font-weight:700;letter-spacing:.02em}
+#bst .bs-pill.n{background:var(--nl);color:var(--n2)}
+#bst .bs-pill.w{background:var(--wl);color:var(--w2)}
+#bst .bs-pill.sv{background:var(--sl);color:var(--s2)}
+#bst .bs-tot{margin-left:auto;font-size:.8rem;font-weight:700;color:var(--g8);font-variant-numeric:tabular-nums}
+#bst .bs-item{display:flex;justify-content:space-between;align-items:center;font-size:.77rem;padding:5px 0;color:var(--g6);border-bottom:1px solid var(--g2)}
+#bst .bs-item:last-child{border-bottom:none}
+#bst .bs-amt{font-weight:600;color:var(--g7);font-variant-numeric:tabular-nums}
+
+/* ANNUAL */
+#bst .ann-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g3);box-shadow:var(--sh);padding:1.1rem 1.4rem;width:100%}
+@media(max-width:600px){#bst .ann-card{padding:.9rem 1rem}}
+#bst .ann-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:400px){#bst .ann-grid{grid-template-columns:1fr}}
+#bst .ann-item{border-radius:var(--rs);padding:.85rem 1rem}
+#bst .ann-item.n{background:var(--nll);border:1.5px solid var(--nl)}
+#bst .ann-item.w{background:var(--wll);border:1.5px solid var(--wl)}
+#bst .ann-item.sv{background:var(--sll);border:1.5px solid var(--sl)}
+#bst .ann-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+#bst .ann-item.n .ann-lbl{color:var(--n2)}
+#bst .ann-item.w .ann-lbl{color:var(--w2)}
+#bst .ann-item.sv .ann-lbl{color:var(--s2)}
+#bst .ann-val{font-size:1rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;word-break:break-word}
+#bst .ann-item.n .ann-val{color:var(--n1)}
+#bst .ann-item.w .ann-val{color:var(--w1)}
+#bst .ann-item.sv .ann-val{color:var(--s1)}
+#bst .ann-note{font-size:.76rem;color:var(--g6);margin-top:10px;padding:9px 12px;background:var(--g2);border-radius:var(--rxs);line-height:1.5}
+#bst .ann-note strong{color:var(--g8)}
+</style>
 </head>
 <body>
-<div id="budget-app">
-  <div class="g" aria-hidden="true"></div>
+<div id="bst">
 
-  <!-- Country bar -->
-  <div class="cbar">
-    <label for="ba-country">Country</label>
-    <div class="swrap">
-      <span class="sflag" id="ba-flag">🇵🇰</span>
-      <select id="ba-country"></select>
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">&#x1F4A1; Smart Money Tool</div>
+    <h1 class="hero-title">
+      Budget Splitter
+      <span class="grad">50 / 30 / 20 Rule</span>
+    </h1>
+    <p class="hero-sub">Needs &middot; Wants &middot; Savings &mdash; real-time allocation</p>
+    <div class="loc-chip" id="locChip">
+      <span class="flag-box" id="flagEl">&#x1F1F5;&#x1F1F0;</span>
+      <div class="loc-info">
+        <div class="loc-name" id="locLabel">Pakistan</div>
+        <div class="loc-cur" id="locCur">PKR &mdash; Pakistani Rupee</div>
+      </div>
     </div>
-    <span class="ctag" id="ba-cur-tag">PKR</span>
   </div>
+</div>
 
-  <header>
-    <div class="badge"><span class="bdot"></span> Financial Planning Tool</div>
-    <h1>50 / 30 / 20<br>Budget Splitter</h1>
-    <p>Enter your take-home income and instantly see your ideal budget breakdown.</p>
-  </header>
-
-  <div class="card">
-
-    <!-- Income -->
-    <div class="inc-sec">
-      <label class="slbl" for="ba-income">Monthly Take-Home Income</label>
-      <div class="iwrap">
-        <span class="ipfx" id="ba-pfx">₨</span>
-        <input id="ba-income" type="number" min="0" value="80000" placeholder="80000" />
+<!-- INCOME ROW -->
+<div class="income-wrap">
+  <div class="income-inner">
+    <div class="inc-input-box">
+      <span class="inc-sym-tab" id="currSym">Rs.</span>
+      <input type="number" id="incomeInput" value="100000" min="0" placeholder="0" size="6"/>
+    </div>
+    <div class="select-group">
+      <div class="sel-wrap country">
+        <svg class="sel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        <select id="countrySelect" class="bst-sel"></select>
       </div>
-      <div class="frow">
-        <button class="fbtn act" data-freq="monthly">Monthly</button>
-        <button class="fbtn" data-freq="weekly">Weekly</button>
-        <button class="fbtn" data-freq="annual">Annual</button>
+      <div class="sel-wrap">
+        <svg class="sel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <select id="periodSelect" class="bst-sel">
+          <option value="monthly">Monthly</option>
+          <option value="weekly">Weekly</option>
+          <option value="annual">Annual</option>
+        </select>
       </div>
     </div>
+  </div>
+</div>
+<div class="period-note" id="periodNote">Showing monthly split</div>
 
-    <!-- Chart + Buckets -->
-    <div class="vrow">
-      <div class="dwrap">
-        <canvas id="ba-donut" width="175" height="175"></canvas>
-      </div>
-      <div class="bkts">
-        <div class="bkt bn">
-          <div class="bico">🏠</div>
-          <div class="bbody">
-            <div class="btitle">Needs</div>
-            <div class="bamt" id="ba-n-amt">₨40,000</div>
-            <div class="bdesc">Rent · Groceries · Utilities · Insurance</div>
-            <div class="btrack"><div class="bfill" id="ba-n-bar" style="width:50%"></div></div>
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- Budget Cards -->
+  <div>
+    <div class="sec-head"><span class="sec-lbl">Your budget breakdown</span><div class="sec-line"></div></div>
+    <div class="alloc-grid">
+
+      <div class="ac needs">
+        <div class="ac-stripe"></div>
+        <div class="ac-body">
+          <div class="ac-top-row">
+            <div class="ac-icon-wrap">
+              <div class="ac-icon">&#x1F3E0;</div>
+              <div class="ac-meta">
+                <div class="ac-name">Needs</div>
+                <div class="ac-pct" id="cNPct">50%</div>
+              </div>
+            </div>
           </div>
-          <div class="bright"><div class="bpct" id="ba-n-pct">50%</div></div>
-        </div>
-        <div class="bkt bw">
-          <div class="bico">🎉</div>
-          <div class="bbody">
-            <div class="btitle">Wants</div>
-            <div class="bamt" id="ba-w-amt">₨24,000</div>
-            <div class="bdesc">Dining · Entertainment · Hobbies</div>
-            <div class="btrack"><div class="bfill" id="ba-w-bar" style="width:30%"></div></div>
+          <div class="ac-amount" id="cNAmt">&#8212;</div>
+          <div class="ac-day" id="cNDay">&#8212; / day</div>
+          <div class="ac-bar"><div class="ac-bar-fill" id="mbN" style="width:50%"></div></div>
+          <div class="ac-desc">Rent, groceries, utilities, transport, insurance, minimum debt</div>
+          <div class="ac-icon">&#x1F3E0;</div>
+          <div class="ac-mid">
+            <div class="ac-name">Needs</div>
+            <div class="ac-pct" id="cNPct2">50%</div>
           </div>
-          <div class="bright"><div class="bpct" id="ba-w-pct">30%</div></div>
-        </div>
-        <div class="bkt bs">
-          <div class="bico">💰</div>
-          <div class="bbody">
-            <div class="btitle">Savings</div>
-            <div class="bamt" id="ba-s-amt">₨16,000</div>
-            <div class="bdesc">Emergency Fund · Investments · Debt</div>
-            <div class="btrack"><div class="bfill" id="ba-s-bar" style="width:20%"></div></div>
+          <div class="ac-right">
+            <div class="ac-amount" id="cNAmt2">&#8212;</div>
+            <div class="ac-day" id="cNDay2">&#8212; / day</div>
           </div>
-          <div class="bright"><div class="bpct" id="ba-s-pct">20%</div></div>
         </div>
       </div>
-    </div>
 
-    <div class="div"></div>
-
-    <!-- Sliders -->
-    <div class="slsec">
-      <div class="shdr">
-        <h2 class="stitle">Customize Ratios</h2>
-        <button class="rbtn" id="ba-reset">↺ Reset 50/30/20</button>
-      </div>
-      <div class="srow">
-        <div class="slbl2"><span class="sdot" style="background:var(--n)"></span>Needs</div>
-        <input id="ba-sl-needs" type="range" min="0" max="100" value="50" />
-        <div class="sval" id="ba-sl-nv" style="color:#a5a8ff">50%</div>
-      </div>
-      <div class="srow">
-        <div class="slbl2"><span class="sdot" style="background:var(--w)"></span>Wants</div>
-        <input id="ba-sl-wants" type="range" min="0" max="100" value="30" />
-        <div class="sval" id="ba-sl-wv" style="color:#f9a8d4">30%</div>
-      </div>
-      <div class="srow">
-        <div class="slbl2"><span class="sdot" style="background:var(--s)"></span>Savings</div>
-        <input id="ba-sl-savings" type="range" min="0" max="100" value="20" />
-        <div class="sval" id="ba-sl-sv" style="color:#6ee7b7">20%</div>
-      </div>
-      <div class="sumrow">
-        <span>Total:</span>
-        <span class="sumbadge" id="ba-sum">100%</span>
-      </div>
-    </div>
-
-    <div class="div"></div>
-
-    <!-- Projection -->
-    <div class="proj">
-      <div class="ptitle">📅 Annual Projection</div>
-      <div class="pgrid">
-        <div class="pitem pn">
-          <div class="pilbl">🏠 Needs / yr</div>
-          <div class="pival" id="ba-pn">₨480,000</div>
-        </div>
-        <div class="pitem pw">
-          <div class="pilbl">🎉 Wants / yr</div>
-          <div class="pival" id="ba-pw">₨288,000</div>
-        </div>
-        <div class="pitem ps">
-          <div class="pilbl">💰 Savings / yr</div>
-          <div class="pival" id="ba-ps">₨192,000</div>
+      <div class="ac wants">
+        <div class="ac-stripe"></div>
+        <div class="ac-body">
+          <div class="ac-top-row">
+            <div class="ac-icon-wrap">
+              <div class="ac-icon">&#x1F389;</div>
+              <div class="ac-meta">
+                <div class="ac-name">Wants</div>
+                <div class="ac-pct" id="cWPct">30%</div>
+              </div>
+            </div>
+          </div>
+          <div class="ac-amount" id="cWAmt">&#8212;</div>
+          <div class="ac-day" id="cWDay">&#8212; / day</div>
+          <div class="ac-bar"><div class="ac-bar-fill" id="mbW" style="width:30%"></div></div>
+          <div class="ac-desc">Dining out, streaming, hobbies, shopping, travel &amp; fun</div>
+          <div class="ac-icon">&#x1F389;</div>
+          <div class="ac-mid">
+            <div class="ac-name">Wants</div>
+            <div class="ac-pct" id="cWPct2">30%</div>
+          </div>
+          <div class="ac-right">
+            <div class="ac-amount" id="cWAmt2">&#8212;</div>
+            <div class="ac-day" id="cWDay2">&#8212; / day</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Tips -->
-    <div>
-      <div class="tiphdr">
-        <h2>💡 Financial Tip</h2>
-        <span class="tipbadge bg" id="ba-tip-badge">General</span>
-      </div>
-      <div class="tipbox">
-        <div class="tiptxt" id="ba-tip-text">Loading your personalised tip…</div>
-        <div class="tipbar-t"><div class="tipbar-f" id="ba-tip-prog"></div></div>
-      </div>
-      <div class="tipnav">
-        <span class="tipcnt" id="ba-tip-count">Tip 1 of 1</span>
-        <div class="tipbtns">
-          <button class="tipbtn" id="ba-tip-prev">&#8592;</button>
-          <button class="tipbtn" id="ba-tip-next">&#8594;</button>
+      <div class="ac savings">
+        <div class="ac-stripe"></div>
+        <div class="ac-body">
+          <div class="ac-top-row">
+            <div class="ac-icon-wrap">
+              <div class="ac-icon">&#x1F4B0;</div>
+              <div class="ac-meta">
+                <div class="ac-name">Savings</div>
+                <div class="ac-pct" id="cSPct">20%</div>
+              </div>
+            </div>
+          </div>
+          <div class="ac-amount" id="cSAmt">&#8212;</div>
+          <div class="ac-day" id="cSDay">&#8212; / day</div>
+          <div class="ac-bar"><div class="ac-bar-fill" id="mbS" style="width:20%"></div></div>
+          <div class="ac-desc">Emergency fund, investments, retirement, extra debt</div>
+          <div class="ac-icon">&#x1F4B0;</div>
+          <div class="ac-mid">
+            <div class="ac-name">Savings</div>
+            <div class="ac-pct" id="cSPct2">20%</div>
+          </div>
+          <div class="ac-right">
+            <div class="ac-amount" id="cSAmt2">&#8212;</div>
+            <div class="ac-day" id="cSDay2">&#8212; / day</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="disc">
-      This tool is for educational purposes only and does not constitute personalised financial advice.<br>
-      Your optimal split may vary based on your cost of living, debt load, and goals.
     </div>
   </div>
 
-  <footer>
-    <div class="ftlbl">Our Other Apps</div>
-    <a href="apps.html" class="appsbtn">Explore All Apps <span class="arr">→</span></a>
-    <div class="ftcopy">© 2025 Budget Tools · Educational use only · Not financial advice</div>
-  </footer>
+  <!-- Charts -->
+  <div>
+    <div class="sec-head"><span class="sec-lbl">Visual overview</span><div class="sec-line"></div></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="sec-lbl" style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--g5);margin-bottom:.75rem;display:block">Allocation</div>
+        <div class="chart-wrap donut-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="donut-center"><div class="dc-lbl">Total</div><div class="dc-val" id="dcVal">&#8212;</div></div>
+        </div>
+        <div class="leg">
+          <div class="leg-row"><div class="leg-l"><div class="leg-dot" style="background:#3b82f6"></div>Needs</div><div class="leg-v" id="lgN">&#8212;</div></div>
+          <div class="leg-row"><div class="leg-l"><div class="leg-dot" style="background:#10b981"></div>Wants</div><div class="leg-v" id="lgW">&#8212;</div></div>
+          <div class="leg-row"><div class="leg-l"><div class="leg-dot" style="background:#8b5cf6"></div>Savings</div><div class="leg-v" id="lgS">&#8212;</div></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="sec-lbl" style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--g5);margin-bottom:.75rem;display:block">Monthly vs Annual</div>
+        <div class="chart-wrap bar-wrap"><canvas id="barChart"></canvas></div>
+        <div class="leg" style="margin-top:10px">
+          <div class="leg-row"><div class="leg-l"><div class="leg-dot" style="background:#3b82f6;border-radius:50%"></div>Monthly</div></div>
+          <div class="leg-row"><div class="leg-l"><div class="leg-dot" style="background:#bfdbfe;border-radius:50%"></div>Annual</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sliders -->
+  <div class="sliders-card">
+    <div class="sl-hdr">
+      <span class="sl-title">Adjust percentages &mdash; always sums to 100%</span>
+      <button class="reset-btn" id="resetBtn">&#x21BA; Reset 50/30/20</button>
+    </div>
+    <div class="sl-row">
+      <span class="sl-lbl n">Needs</span>
+      <input type="range" id="rNeeds" min="0" max="100" value="50" step="1"/>
+      <span class="sl-pct" id="vNeeds">50%</span>
+    </div>
+    <div class="sl-row">
+      <span class="sl-lbl w">Wants</span>
+      <input type="range" id="rWants" min="0" max="100" value="30" step="1"/>
+      <span class="sl-pct" id="vWants">30%</span>
+    </div>
+    <div class="sl-row">
+      <span class="sl-lbl sv">Savings</span>
+      <input type="range" id="rSavings" min="0" max="100" value="20" step="1"/>
+      <span class="sl-pct" id="vSavings">20%</span>
+    </div>
+    <div class="tot-wrap">
+      <div class="tot-bg">
+        <div class="tbn" id="tbN" style="width:50%"></div>
+        <div class="tbw" id="tbW" style="width:30%"></div>
+        <div class="tbs" id="tbS" style="width:20%"></div>
+      </div>
+      <div class="tot-st t-ok" id="totStatus">&#x2713; 100% &mdash; perfectly balanced</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="prog-card">
+    <div class="sec-head" style="margin-bottom:.85rem"><span class="sec-lbl">Income split</span><div class="sec-line"></div></div>
+    <div class="pb-row">
+      <div class="pb-top"><span class="pb-lbl">&#x1F3E0; Needs</span><span class="pb-val" id="pbNV">&#8212;</span></div>
+      <div class="pb-bg"><div class="pb-fill" id="pbN" style="width:50%;background:linear-gradient(90deg,#3b82f6,#2563eb)"></div></div>
+    </div>
+    <div class="pb-row">
+      <div class="pb-top"><span class="pb-lbl">&#x1F389; Wants</span><span class="pb-val" id="pbWV">&#8212;</span></div>
+      <div class="pb-bg"><div class="pb-fill" id="pbW" style="width:30%;background:linear-gradient(90deg,#10b981,#059669)"></div></div>
+    </div>
+    <div class="pb-row">
+      <div class="pb-top"><span class="pb-lbl">&#x1F4B0; Savings</span><span class="pb-val" id="pbSV">&#8212;</span></div>
+      <div class="pb-bg"><div class="pb-fill" id="pbS" style="width:20%;background:linear-gradient(90deg,#8b5cf6,#7c3aed)"></div></div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="bkd-card">
+    <div class="sec-head" style="margin-bottom:.85rem"><span class="sec-lbl">Spending guide</span><div class="sec-line"></div></div>
+    <div class="bs-sec">
+      <div class="bs-hdr"><span class="bs-pill n">&#x1F3E0; Needs</span><span class="bs-tot" id="bsN">&#8212;</span></div>
+      <div class="bs-item"><span>Housing (rent / mortgage)</span><span class="bs-amt" id="b1">&#8212;</span></div>
+      <div class="bs-item"><span>Groceries &amp; food</span><span class="bs-amt" id="b2">&#8212;</span></div>
+      <div class="bs-item"><span>Transport &amp; fuel</span><span class="bs-amt" id="b3">&#8212;</span></div>
+      <div class="bs-item"><span>Utilities &amp; internet</span><span class="bs-amt" id="b4">&#8212;</span></div>
+      <div class="bs-item"><span>Insurance</span><span class="bs-amt" id="b5">&#8212;</span></div>
+    </div>
+    <div class="bs-sec">
+      <div class="bs-hdr"><span class="bs-pill w">&#x1F389; Wants</span><span class="bs-tot" id="bsW">&#8212;</span></div>
+      <div class="bs-item"><span>Dining out &amp; cafes</span><span class="bs-amt" id="b6">&#8212;</span></div>
+      <div class="bs-item"><span>Entertainment &amp; streaming</span><span class="bs-amt" id="b7">&#8212;</span></div>
+      <div class="bs-item"><span>Shopping &amp; clothing</span><span class="bs-amt" id="b8">&#8212;</span></div>
+      <div class="bs-item"><span>Travel &amp; holidays</span><span class="bs-amt" id="b9">&#8212;</span></div>
+      <div class="bs-item"><span>Hobbies &amp; fitness</span><span class="bs-amt" id="b10">&#8212;</span></div>
+    </div>
+    <div class="bs-sec">
+      <div class="bs-hdr"><span class="bs-pill sv">&#x1F4B0; Savings</span><span class="bs-tot" id="bsS">&#8212;</span></div>
+      <div class="bs-item"><span>Emergency fund (3&ndash;6 mo)</span><span class="bs-amt" id="b11">&#8212;</span></div>
+      <div class="bs-item"><span>Investments / stocks</span><span class="bs-amt" id="b12">&#8212;</span></div>
+      <div class="bs-item"><span>Retirement / pension</span><span class="bs-amt" id="b13">&#8212;</span></div>
+      <div class="bs-item"><span>Extra debt repayment</span><span class="bs-amt" id="b14">&#8212;</span></div>
+    </div>
+  </div>
+
+  <!-- Annual -->
+  <div class="ann-card">
+    <div class="sec-head" style="margin-bottom:.85rem"><span class="sec-lbl">Annual projection</span><div class="sec-line"></div></div>
+    <div class="ann-grid">
+      <div class="ann-item n"><div class="ann-lbl">Needs / year</div><div class="ann-val" id="aN">&#8212;</div></div>
+      <div class="ann-item w"><div class="ann-lbl">Wants / year</div><div class="ann-val" id="aW">&#8212;</div></div>
+      <div class="ann-item sv"><div class="ann-lbl">Savings / year</div><div class="ann-val" id="aS">&#8212;</div></div>
+    </div>
+    <div class="ann-note">At this rate you will save <strong id="aSStr">&#8212;</strong> this year.</div>
+  </div>
+
+</div>
 </div>
 
 <script>
-(function(){
-'use strict';
-var ROOT=document.getElementById('budget-app');
-if(!ROOT||ROOT.dataset.baInit)return;
-ROOT.dataset.baInit='1';
-
-var COUNTRIES=[
-  {code:'PK',name:'Pakistan',      cur:'PKR',sym:'₨',   flag:'🇵🇰',inc:80000},
-  {code:'US',name:'United States', cur:'USD',sym:'$',   flag:'🇺🇸',inc:5000},
-  {code:'GB',name:'United Kingdom',cur:'GBP',sym:'£',   flag:'🇬🇧',inc:3500},
-  {code:'EU',name:'Euro Zone',     cur:'EUR',sym:'€',   flag:'🇪🇺',inc:3500},
-  {code:'IN',name:'India',         cur:'INR',sym:'₹',   flag:'🇮🇳',inc:50000},
-  {code:'CA',name:'Canada',        cur:'CAD',sym:'C$',  flag:'🇨🇦',inc:5500},
-  {code:'AU',name:'Australia',     cur:'AUD',sym:'A$',  flag:'🇦🇺',inc:6000},
-  {code:'AE',name:'UAE',           cur:'AED',sym:'AED ',flag:'🇦🇪',inc:15000},
-  {code:'SA',name:'Saudi Arabia',  cur:'SAR',sym:'SAR ',flag:'🇸🇦',inc:12000},
-  {code:'TR',name:'Turkey',        cur:'TRY',sym:'₺',   flag:'🇹🇷',inc:25000},
-  {code:'BD',name:'Bangladesh',    cur:'BDT',sym:'৳',   flag:'🇧🇩',inc:40000},
-  {code:'CN',name:'China',         cur:'CNY',sym:'¥',   flag:'🇨🇳',inc:12000},
-  {code:'JP',name:'Japan',         cur:'JPY',sym:'¥',   flag:'🇯🇵',inc:350000},
-  {code:'KR',name:'South Korea',   cur:'KRW',sym:'₩',   flag:'🇰🇷',inc:3500000},
-  {code:'MY',name:'Malaysia',      cur:'MYR',sym:'RM ', flag:'🇲🇾',inc:6000},
-  {code:'SG',name:'Singapore',     cur:'SGD',sym:'S$',  flag:'🇸🇬',inc:6000},
-  {code:'ID',name:'Indonesia',     cur:'IDR',sym:'Rp ', flag:'🇮🇩',inc:8000000},
-  {code:'PH',name:'Philippines',   cur:'PHP',sym:'₱',   flag:'🇵🇭',inc:30000},
-  {code:'TH',name:'Thailand',      cur:'THB',sym:'฿',   flag:'🇹🇭',inc:25000},
-  {code:'VN',name:'Vietnam',       cur:'VND',sym:'₫',   flag:'🇻🇳',inc:15000000},
-  {code:'NG',name:'Nigeria',       cur:'NGN',sym:'₦',   flag:'🇳🇬',inc:200000},
-  {code:'EG',name:'Egypt',         cur:'EGP',sym:'E£ ', flag:'🇪🇬',inc:15000},
-  {code:'KE',name:'Kenya',         cur:'KES',sym:'KSh ',flag:'🇰🇪',inc:50000},
-  {code:'GH',name:'Ghana',         cur:'GHS',sym:'GH₵ ',flag:'🇬🇭',inc:3000},
-  {code:'ZA',name:'South Africa',  cur:'ZAR',sym:'R ',  flag:'🇿🇦',inc:25000},
-  {code:'BR',name:'Brazil',        cur:'BRL',sym:'R$',  flag:'🇧🇷',inc:5000},
-  {code:'MX',name:'Mexico',        cur:'MXN',sym:'MX$', flag:'🇲🇽',inc:20000},
-  {code:'RU',name:'Russia',        cur:'RUB',sym:'₽',   flag:'🇷🇺',inc:60000},
-  {code:'AR',name:'Argentina',     cur:'ARS',sym:'AR$', flag:'🇦🇷',inc:200000},
-  {code:'OM',name:'Oman',          cur:'OMR',sym:'OMR ',flag:'🇴🇲',inc:1500}
+const COUNTRIES=[
+{name:"Pakistan",code:"PK",currency:"PKR",sym:"Rs.",flag:"🇵🇰",locale:"ur-PK"},
+{name:"Afghanistan",code:"AF",currency:"AFN",sym:"Af",flag:"🇦🇫",locale:"ps-AF"},
+{name:"Albania",code:"AL",currency:"ALL",sym:"L",flag:"🇦🇱",locale:"sq-AL"},
+{name:"Algeria",code:"DZ",currency:"DZD",sym:"DA",flag:"🇩🇿",locale:"ar-DZ"},
+{name:"Angola",code:"AO",currency:"AOA",sym:"Kz",flag:"🇦🇴",locale:"pt-AO"},
+{name:"Argentina",code:"AR",currency:"ARS",sym:"AR$",flag:"🇦🇷",locale:"es-AR"},
+{name:"Armenia",code:"AM",currency:"AMD",sym:"AMD",flag:"🇦🇲",locale:"hy-AM"},
+{name:"Australia",code:"AU",currency:"AUD",sym:"A$",flag:"🇦🇺",locale:"en-AU"},
+{name:"Austria",code:"AT",currency:"EUR",sym:"EUR",flag:"🇦🇹",locale:"de-AT"},
+{name:"Azerbaijan",code:"AZ",currency:"AZN",sym:"AZN",flag:"🇦🇿",locale:"az-AZ"},
+{name:"Bahrain",code:"BH",currency:"BHD",sym:"BD",flag:"🇧🇭",locale:"ar-BH"},
+{name:"Bangladesh",code:"BD",currency:"BDT",sym:"BDT",flag:"🇧🇩",locale:"bn-BD"},
+{name:"Belarus",code:"BY",currency:"BYN",sym:"Br",flag:"🇧🇾",locale:"be-BY"},
+{name:"Belgium",code:"BE",currency:"EUR",sym:"EUR",flag:"🇧🇪",locale:"nl-BE"},
+{name:"Bolivia",code:"BO",currency:"BOB",sym:"Bs",flag:"🇧🇴",locale:"es-BO"},
+{name:"Brazil",code:"BR",currency:"BRL",sym:"R$",flag:"🇧🇷",locale:"pt-BR"},
+{name:"Bulgaria",code:"BG",currency:"BGN",sym:"BGN",flag:"🇧🇬",locale:"bg-BG"},
+{name:"Cambodia",code:"KH",currency:"KHR",sym:"KHR",flag:"🇰🇭",locale:"km-KH"},
+{name:"Cameroon",code:"CM",currency:"XAF",sym:"CFA",flag:"🇨🇲",locale:"fr-CM"},
+{name:"Canada",code:"CA",currency:"CAD",sym:"C$",flag:"🇨🇦",locale:"en-CA"},
+{name:"Chile",code:"CL",currency:"CLP",sym:"CL$",flag:"🇨🇱",locale:"es-CL"},
+{name:"China",code:"CN",currency:"CNY",sym:"CN¥",flag:"🇨🇳",locale:"zh-CN"},
+{name:"Colombia",code:"CO",currency:"COP",sym:"CO$",flag:"🇨🇴",locale:"es-CO"},
+{name:"Croatia",code:"HR",currency:"EUR",sym:"EUR",flag:"🇭🇷",locale:"hr-HR"},
+{name:"Czech Republic",code:"CZ",currency:"CZK",sym:"Kc",flag:"🇨🇿",locale:"cs-CZ"},
+{name:"Denmark",code:"DK",currency:"DKK",sym:"kr",flag:"🇩🇰",locale:"da-DK"},
+{name:"Dominican Republic",code:"DO",currency:"DOP",sym:"RD$",flag:"🇩🇴",locale:"es-DO"},
+{name:"Ecuador",code:"EC",currency:"USD",sym:"$",flag:"🇪🇨",locale:"es-EC"},
+{name:"Egypt",code:"EG",currency:"EGP",sym:"E£",flag:"🇪🇬",locale:"ar-EG"},
+{name:"Ethiopia",code:"ET",currency:"ETB",sym:"Br",flag:"🇪🇹",locale:"am-ET"},
+{name:"Finland",code:"FI",currency:"EUR",sym:"EUR",flag:"🇫🇮",locale:"fi-FI"},
+{name:"France",code:"FR",currency:"EUR",sym:"EUR",flag:"🇫🇷",locale:"fr-FR"},
+{name:"Germany",code:"DE",currency:"EUR",sym:"EUR",flag:"🇩🇪",locale:"de-DE"},
+{name:"Ghana",code:"GH",currency:"GHS",sym:"GHS",flag:"🇬🇭",locale:"en-GH"},
+{name:"Greece",code:"GR",currency:"EUR",sym:"EUR",flag:"🇬🇷",locale:"el-GR"},
+{name:"Guatemala",code:"GT",currency:"GTQ",sym:"Q",flag:"🇬🇹",locale:"es-GT"},
+{name:"Hungary",code:"HU",currency:"HUF",sym:"Ft",flag:"🇭🇺",locale:"hu-HU"},
+{name:"India",code:"IN",currency:"INR",sym:"Rs",flag:"🇮🇳",locale:"en-IN"},
+{name:"Indonesia",code:"ID",currency:"IDR",sym:"Rp",flag:"🇮🇩",locale:"id-ID"},
+{name:"Iran",code:"IR",currency:"IRR",sym:"IRR",flag:"🇮🇷",locale:"fa-IR"},
+{name:"Iraq",code:"IQ",currency:"IQD",sym:"IQD",flag:"🇮🇶",locale:"ar-IQ"},
+{name:"Ireland",code:"IE",currency:"EUR",sym:"EUR",flag:"🇮🇪",locale:"en-IE"},
+{name:"Israel",code:"IL",currency:"ILS",sym:"ILS",flag:"🇮🇱",locale:"he-IL"},
+{name:"Italy",code:"IT",currency:"EUR",sym:"EUR",flag:"🇮🇹",locale:"it-IT"},
+{name:"Japan",code:"JP",currency:"JPY",sym:"JP¥",flag:"🇯🇵",locale:"ja-JP"},
+{name:"Jordan",code:"JO",currency:"JOD",sym:"JD",flag:"🇯🇴",locale:"ar-JO"},
+{name:"Kazakhstan",code:"KZ",currency:"KZT",sym:"KZT",flag:"🇰🇿",locale:"kk-KZ"},
+{name:"Kenya",code:"KE",currency:"KES",sym:"KSh",flag:"🇰🇪",locale:"sw-KE"},
+{name:"Kuwait",code:"KW",currency:"KWD",sym:"KD",flag:"🇰🇼",locale:"ar-KW"},
+{name:"Lebanon",code:"LB",currency:"LBP",sym:"LL",flag:"🇱🇧",locale:"ar-LB"},
+{name:"Libya",code:"LY",currency:"LYD",sym:"LD",flag:"🇱🇾",locale:"ar-LY"},
+{name:"Malaysia",code:"MY",currency:"MYR",sym:"RM",flag:"🇲🇾",locale:"ms-MY"},
+{name:"Mexico",code:"MX",currency:"MXN",sym:"MX$",flag:"🇲🇽",locale:"es-MX"},
+{name:"Morocco",code:"MA",currency:"MAD",sym:"MAD",flag:"🇲🇦",locale:"ar-MA"},
+{name:"Myanmar",code:"MM",currency:"MMK",sym:"K",flag:"🇲🇲",locale:"my-MM"},
+{name:"Nepal",code:"NP",currency:"NPR",sym:"Rs",flag:"🇳🇵",locale:"ne-NP"},
+{name:"Netherlands",code:"NL",currency:"EUR",sym:"EUR",flag:"🇳🇱",locale:"nl-NL"},
+{name:"New Zealand",code:"NZ",currency:"NZD",sym:"NZ$",flag:"🇳🇿",locale:"en-NZ"},
+{name:"Nigeria",code:"NG",currency:"NGN",sym:"NGN",flag:"🇳🇬",locale:"en-NG"},
+{name:"Norway",code:"NO",currency:"NOK",sym:"kr",flag:"🇳🇴",locale:"nb-NO"},
+{name:"Oman",code:"OM",currency:"OMR",sym:"OMR",flag:"🇴🇲",locale:"ar-OM"},
+{name:"Pakistan",code:"PK",currency:"PKR",sym:"Rs.",flag:"🇵🇰",locale:"ur-PK"},
+{name:"Palestine",code:"PS",currency:"ILS",sym:"ILS",flag:"🇵🇸",locale:"ar-PS"},
+{name:"Peru",code:"PE",currency:"PEN",sym:"S/.",flag:"🇵🇪",locale:"es-PE"},
+{name:"Philippines",code:"PH",currency:"PHP",sym:"PHP",flag:"🇵🇭",locale:"en-PH"},
+{name:"Poland",code:"PL",currency:"PLN",sym:"zl",flag:"🇵🇱",locale:"pl-PL"},
+{name:"Portugal",code:"PT",currency:"EUR",sym:"EUR",flag:"🇵🇹",locale:"pt-PT"},
+{name:"Qatar",code:"QA",currency:"QAR",sym:"QR",flag:"🇶🇦",locale:"ar-QA"},
+{name:"Romania",code:"RO",currency:"RON",sym:"lei",flag:"🇷🇴",locale:"ro-RO"},
+{name:"Russia",code:"RU",currency:"RUB",sym:"RUB",flag:"🇷🇺",locale:"ru-RU"},
+{name:"Saudi Arabia",code:"SA",currency:"SAR",sym:"SR",flag:"🇸🇦",locale:"ar-SA"},
+{name:"Senegal",code:"SN",currency:"XOF",sym:"CFA",flag:"🇸🇳",locale:"fr-SN"},
+{name:"Serbia",code:"RS",currency:"RSD",sym:"din",flag:"🇷🇸",locale:"sr-RS"},
+{name:"Singapore",code:"SG",currency:"SGD",sym:"S$",flag:"🇸🇬",locale:"en-SG"},
+{name:"South Africa",code:"ZA",currency:"ZAR",sym:"R",flag:"🇿🇦",locale:"en-ZA"},
+{name:"South Korea",code:"KR",currency:"KRW",sym:"KRW",flag:"🇰🇷",locale:"ko-KR"},
+{name:"Spain",code:"ES",currency:"EUR",sym:"EUR",flag:"🇪🇸",locale:"es-ES"},
+{name:"Sri Lanka",code:"LK",currency:"LKR",sym:"LKR",flag:"🇱🇰",locale:"si-LK"},
+{name:"Sweden",code:"SE",currency:"SEK",sym:"kr",flag:"🇸🇪",locale:"sv-SE"},
+{name:"Switzerland",code:"CH",currency:"CHF",sym:"Fr",flag:"🇨🇭",locale:"de-CH"},
+{name:"Taiwan",code:"TW",currency:"TWD",sym:"NT$",flag:"🇹🇼",locale:"zh-TW"},
+{name:"Tanzania",code:"TZ",currency:"TZS",sym:"TSh",flag:"🇹🇿",locale:"sw-TZ"},
+{name:"Thailand",code:"TH",currency:"THB",sym:"THB",flag:"🇹🇭",locale:"th-TH"},
+{name:"Tunisia",code:"TN",currency:"TND",sym:"DT",flag:"🇹🇳",locale:"ar-TN"},
+{name:"Turkey",code:"TR",currency:"TRY",sym:"TRY",flag:"🇹🇷",locale:"tr-TR"},
+{name:"Uganda",code:"UG",currency:"UGX",sym:"USh",flag:"🇺🇬",locale:"sw-UG"},
+{name:"Ukraine",code:"UA",currency:"UAH",sym:"UAH",flag:"🇺🇦",locale:"uk-UA"},
+{name:"United Arab Emirates",code:"AE",currency:"AED",sym:"AED",flag:"🇦🇪",locale:"ar-AE"},
+{name:"United Kingdom",code:"GB",currency:"GBP",sym:"GBP",flag:"🇬🇧",locale:"en-GB"},
+{name:"United States",code:"US",currency:"USD",sym:"$",flag:"🇺🇸",locale:"en-US"},
+{name:"Uruguay",code:"UY",currency:"UYU",sym:"$U",flag:"🇺🇾",locale:"es-UY"},
+{name:"Uzbekistan",code:"UZ",currency:"UZS",sym:"UZS",flag:"🇺🇿",locale:"uz-UZ"},
+{name:"Venezuela",code:"VE",currency:"VES",sym:"Bs.S",flag:"🇻🇪",locale:"es-VE"},
+{name:"Vietnam",code:"VN",currency:"VND",sym:"VND",flag:"🇻🇳",locale:"vi-VN"},
+{name:"Yemen",code:"YE",currency:"YER",sym:"YER",flag:"🇾🇪",locale:"ar-YE"},
+{name:"Zambia",code:"ZM",currency:"ZMW",sym:"ZK",flag:"🇿🇲",locale:"en-ZM"},
+{name:"Zimbabwe",code:"ZW",currency:"ZWL",sym:"Z$",flag:"🇿🇼",locale:"en-ZW"}
 ];
 
-var TIPS={
-  needs:[
-    "Negotiate your rent annually — even a 5% reduction saves thousands per year.",
-    "Bundle home, auto, and life insurance with one provider for multi-policy discounts.",
-    "Shop at discount grocers — studies show 20–40% savings vs. name brands.",
-    "Meal prep weekly to cut grocery waste by up to 30%.",
-    "Install a smart thermostat — households save significantly on energy bills.",
-    "Use generic pharmacy programs — cut prescription costs by 80%+.",
-    "Cancel unused gym memberships and replace with free YouTube workouts.",
-    "Downsize your vehicle — a lower car payment saves thousands per year.",
-    "Drop collision coverage on cars worth less than 10× the annual premium.",
-    "Use a library card for books, audiobooks, and magazines — all free.",
-    "Line-dry clothes instead of a dryer — saves significantly on electricity.",
-    "Use cold water for laundry — 90% of washer energy goes to heating water.",
-    "Unplug devices when not in use — phantom load adds up.",
-    "Use cash-back apps on every grocery trip.",
-    "Compare insurance rates every renewal — loyalty rarely pays.",
-    "Cook double portions and freeze — saves both time and future food costs.",
-    "Drink filtered tap water — costs 300× less than bottled.",
-    "Buy store-brand medications — regulators require identical active ingredients.",
-    "Carpool or use park-and-ride to cut commuting costs by 50%.",
-    "Ask your landlord for a longer lease in exchange for a rent freeze.",
-    "Switch to a credit union — lower fees and better rates than commercial banks.",
-    "Contact service providers to ask for loyalty discounts — most have retention offers.",
-    "Use LED bulbs — 75% less energy and lasting 25× longer.",
-    "Make coffee at home — saves significant money vs. buying daily.",
-    "Use telehealth for minor ailments — often saves co-pay and travel time.",
-    "Reduce meat 2 days/week — saves meaningfully on groceries.",
-    "Plant-based proteins cost a fraction of the price of beef.",
-    "Time your shopping to clearance hours — usually evenings and Sunday mornings.",
-    "Consider house hacking — renting a room covers part of your mortgage.",
-    "Use cash-back credit card for necessities — pay in full every month.",
-    "Install low-flow showerheads — save thousands of litres of water per year.",
-    "Seal windows and doors with weatherstripping — can reduce heating costs 15%.",
-    "Pay biweekly on your mortgage — makes 1 extra payment per year.",
-    "Compare utility providers annually — switching saves real money.",
-    "Shop at ethnic grocery stores for produce and spices — often 50% cheaper.",
-    "Buy in bulk for non-perishables on sale — rice, pasta, oil, toiletries.",
-    "Grow herbs and easy vegetables at home.",
-    "Use a SIM-only phone plan — often 70% cheaper than bundled contracts.",
-    "Audit subscriptions quarterly — cancel anything unused for 30+ days.",
-    "Raise insurance deductibles and bank the premium savings instead.",
-    "Use a comparison website for utilities, insurance, and mobile annually.",
-    "Look into government assistance programs available in your country.",
-    "Use public transportation even once a week to cut monthly transport costs.",
-    "Negotiate medical bills — hospitals often have financial assistance programs.",
-    "Buy a slow cooker — turns cheap cuts into gourmet meals for very little.",
-    "Plan meals around what's on sale each week, not around cravings.",
-    "Use cashback portals before any online purchase — often 3–10% back.",
-    "Learn basic car maintenance — saves service-centre markups.",
-    "Use free preventive health screenings covered by public health programs.",
-    "Apply for every tax relief and rebate available in your country — they add up."
-  ],
-  wants:[
-    "Implement a 48-hour rule before buying anything over a set amount — impulse fades.",
-    "Delete shopping apps from your phone — out of sight, out of cart.",
-    "Unsubscribe from retail email lists to remove temptation.",
-    "Use a dedicated 'wants' debit card preloaded each month — when it's gone, it's gone.",
-    "Cook restaurant-quality meals at home — YouTube has incredible tutorials.",
-    "Host a potluck instead of going out — same social experience at a fraction of the cost.",
-    "Do a 'no-spend weekend' once a month — it resets your money relationship.",
-    "Borrow books, DVDs, and games from the library instead of buying.",
-    "Rotate streaming services — keep one for 3 months, swap to another.",
-    "Make your own cocktails at home — far cheaper than bar prices.",
-    "Shop end-of-season sales for clothing — 50–70% off next year's wardrobe.",
-    "Use secondhand marketplaces instead of buying new.",
-    "Set a gift budget per person per year — experiences over things.",
-    "Try 'experience gifts' — cooking class, concert, hike — richer than objects.",
-    "Check if museums and attractions have free admission days — many do.",
-    "Buy used electronics — last year's models cost 40–60% less and work identically.",
-    "Use a cashback portal before buying anything online.",
-    "Set a 'splurge once a month' ritual — one deliberate luxury beats random indulgences.",
-    "Cancel subscriptions you forgot — audit your bank statement monthly.",
-    "Switch to a hobby that builds skills — cooking, gardening, coding.",
-    "Check for free concerts, festivals, and outdoor events in your city.",
-    "Try 'Project 333' wardrobe challenge — discover you need far less than you think.",
-    "Use the envelope method for discretionary spending — physical cash creates friction.",
-    "Put wants on a 30-day list — things dropped before day 30 weren't real wants.",
-    "Try a 'no restaurant month' once a year — cook everything.",
-    "Buy tech one generation behind — last year's flagship is 40% cheaper.",
-    "Split costs on gifts, group subscriptions, or experiences with friends.",
-    "Review your wants log monthly and ask: 'Was this worth it?'",
-    "Identify your top 3 genuine wants and fund those. Cut the rest ruthlessly.",
-    "Use meal prep to resist expensive convenience food on busy days.",
-    "Try 'conscious consumption' — buying the thing or the feeling?",
-    "Apply 'one-in-one-out' rule for clothing and electronics.",
-    "Give experiences instead of gifts at holidays — saves money and creates memories.",
-    "Use loyalty programmes strategically — one hotel chain, one airline.",
-    "Try a staycation — explore your own city like a tourist.",
-    "Use a monthly discretionary spending review to spot categories that crept up.",
-    "Seek out free community events — movie nights, markets, concerts in the park.",
-    "Make a game of finding the best free or cheap version of something you love.",
-    "Recognise FOMO spending — most 'limited time' offers return. Don't rush.",
-    "Invest in one high-quality item you use daily instead of several cheap ones.",
-    "Compare cost-per-use before every entertainment purchase.",
-    "Choose a cheap hobby you can do daily — journaling, photography, chess.",
-    "Cancel a subscription today — just one — and observe whether you miss it.",
-    "Seek 'experience over stuff' — memories outlast objects.",
-    "Compare what an hour of work buys before a large purchase — creates perspective.",
-    "Plan one great experience per month rather than many forgettable small ones.",
-    "Learn to cook one dish really well — it replaces a restaurant meal every week.",
-    "Volunteer at events — usually get free entry in exchange.",
-    "Pay for wants with a debit card, never a credit card, to stay in budget.",
-    "Track every wants purchase for one month with zero judgment — data is enlightening."
-  ],
-  savings:[
-    "Automate your savings on payday — you can't spend what you never see.",
-    "Save your next raise entirely — lifestyle inflation is the #1 wealth killer.",
-    "Build a 3–6 month emergency fund before investing in anything else.",
-    "Use a high-yield savings account — rates often 10–20× higher than standard accounts.",
-    "Max your employer's pension or retirement match first — it's an instant 50–100% return.",
-    "Save windfalls (tax refunds, bonuses) before spending — deposit first, decide later.",
-    "Use pay-yourself-first — savings transfer happens before bills.",
-    "Increase your savings rate by 1% every year — you'll barely notice.",
-    "Micro-save using mobile apps — small amounts compound fast.",
-    "Set up sinking funds for predictable expenses: car repair, holidays, travel.",
-    "Calculate your savings rate monthly — it's more important than your income.",
-    "Aim for a 25% savings rate long-term — it unlocks financial independence in ~32 years.",
-    "Invest in index funds for long-term savings — low cost, diversified, time-tested.",
-    "Start saving for retirement as early as possible — every decade of delay costs enormously.",
-    "Never cash out a retirement account when changing jobs — roll it over instead.",
-    "Use dollar-cost averaging — invest the same amount monthly regardless of market conditions.",
-    "Avoid timing the market — time in the market beats timing the market, always.",
-    "Rebalance your portfolio annually to maintain your target asset allocation.",
-    "Use low-cost index funds — expense ratios matter enormously over decades.",
-    "Track your net worth monthly — watching it grow is the best motivation.",
-    "Invest in yourself: one professional certification can increase income significantly.",
-    "Avoid lifestyle inflation: bank 50% of every raise instead of spending it.",
-    "Understand the 4% rule: you can retire when savings = 25× annual expenses.",
-    "Reinvest all dividends automatically — they compound and become a major return source.",
-    "Avoid high-fee financial advisors — a 1% fee costs enormously over decades.",
-    "Never carry a credit card balance — interest rates erase any investment gains.",
-    "Pay off high-interest debt before investing in the market.",
-    "Build your credit score — a good score saves money on loans and insurance.",
-    "Save your car payment after paying it off — you're already used to the expense.",
-    "Know your 'FI number': annual expenses × 25. That's your retirement target.",
-    "Keep investment costs under 0.2% annually — fees are the silent wealth killer.",
-    "Review and optimise your tax situation annually — taxes are your largest expense.",
-    "Build multiple income streams — a single income is a single point of failure.",
-    "Read one personal finance book per quarter — knowledge compounds too.",
-    "Make your savings rate your identity, not your income level.",
-    "Review beneficiaries on all accounts annually — they often get forgotten.",
-    "Build a will and estate plan — ensures savings go exactly where you intend.",
-    "The best savings advice: start today. Every day of delay costs compound interest.",
-    "Understand your pension or provident fund rules — many leave money on the table.",
-    "Consider real estate as a savings vehicle if property rights are strong in your country.",
-    "Use government-backed savings schemes if available — often tax-advantaged.",
-    "Automate annual contributions to retirement accounts early in the year.",
-    "Keep emergency savings in a separate bank — out of sight, out of reach.",
-    "Prioritise saving over investing until you have 3 months of expenses saved.",
-    "Build a strong savings habit now — it gets easier, not harder, over time.",
-    "Celebrate every savings milestone — first significant amount saved, first investment made.",
-    "Never stop saving, even during tough months — even a tiny amount maintains the habit.",
-    "Understand the concept of 'enough' — knowing your target makes saving feel achievable.",
-    "Use automatic savings to remove willpower from the equation entirely.",
-    "A small consistent savings habit started today is worth more than a large one started later."
-  ],
-  income_low:[
-    "Even very small amounts invested consistently for decades create significant wealth.",
-    "Track every currency unit when income is tight — awareness is your most powerful tool.",
-    "Apply for every government benefit you're entitled to — many go unclaimed.",
-    "Use free tax preparation services to ensure you claim every credit.",
-    "Build your first small emergency fund before anything else — it breaks the debt cycle.",
-    "Use local food banks, pantries, and community resources.",
-    "Side gigs can add meaningful income with relatively few hours per week.",
-    "Sell unused items online — most homes have significant value in sellable goods.",
-    "Negotiate medical and utility bills — payment plans are almost always available.",
-    "Learn a high-demand skill for free — many platforms offer free certificates.",
-    "Use cashback apps on every purchase — small amounts add up.",
-    "Look into employer tuition reimbursement programmes to upskill at no personal cost.",
-    "Prioritise eliminating high-interest debt — it's a guaranteed return equal to the rate.",
-    "Use a zero-based budget — assign every currency unit a job.",
-    "Ask about a pay advance or earned wage access before using expensive credit.",
-    "Reduce subscription spending to zero during tight months.",
-    "Grow a small container garden for herbs and vegetables.",
-    "Use public transportation — owning a car costs far more than most people realise.",
-    "Avoid payday loans entirely — effective interest rates are extremely high.",
-    "Use buy-nothing groups for furniture, clothing, and household items.",
-    "Negotiate a payment plan for overdue bills — creditors prefer it to default.",
-    "Look into microfinance options if starting a small business.",
-    "Apply for every scholarship and grant available for education.",
-    "Use public libraries for all entertainment, education, and internet access.",
-    "Cook from scratch — processed food costs far more per calorie.",
-    "Use a prepaid mobile plan — no contract, no bill shock.",
-    "Claim every work-related expense as a tax deduction where applicable.",
-    "Look into government start-up grants if you have a business idea.",
-    "Prioritise sleep and health — prevention is far cheaper than treatment.",
-    "Remember: tight budgets require creativity. Many wealthy people started here."
-  ],
-  income_high:[
-    "With high income, your savings rate matters more than investment returns.",
-    "Max every tax-advantaged account before investing in taxable accounts.",
-    "At high income, tax optimisation becomes more valuable than expense cutting.",
-    "Hire a fee-only fiduciary financial planner — not a commission-based advisor.",
-    "Use charitable giving vehicles to batch donations and maximise deductions.",
-    "Invest in low-cost index funds even with high income — simple wins.",
-    "Understand estate planning — wills, trusts, and beneficiary designations.",
-    "Consider umbrella insurance — protects high-value assets from liability.",
-    "Avoid lifestyle inflation — it's the primary reason high earners aren't wealthy.",
-    "Consider disability insurance — your income is your greatest asset.",
-    "Build a team: accountant, estate attorney, financial planner.",
-    "Invest in international diversification — home country is a single-country bet.",
-    "Consider real estate for passive income and tax benefits.",
-    "Build your FI number — at high income you can reach independence much faster.",
-    "Diversify concentrated stock positions — don't hold more than 5% in one stock.",
-    "Review asset allocation for risk as wealth grows.",
-    "Give equity to children's accounts — transfers wealth tax-efficiently.",
-    "Max all available pension and retirement contributions before taxable investing.",
-    "Consider tax-exempt bonds for income at higher brackets.",
-    "Use loss harvesting in your investment portfolio annually.",
-    "Build a financial model for early retirement — more achievable than you think.",
-    "Create a legacy plan: will, trust, beneficiary designations, and power of attorney.",
-    "Use a good accountant — at high income, expert advice pays for itself.",
-    "Invest in skills that compound with your career: leadership, sales, communication.",
-    "Track net worth quarterly — at high income, trajectory matters most.",
-    "Build generational wealth: invest in your children's financial education.",
-    "Benchmark your savings rate against your income — high earners should save aggressively.",
-    "Give generously — it increases wellbeing and often creates tax benefits.",
-    "Fund education accounts early — compound growth makes a huge difference.",
-    "Remember: high income without savings discipline leads to the same outcome as low income."
-  ],
-  general:[
-    "Write down your top 3 financial goals. Goals without paper are just wishes.",
-    "Review your budget every single month — life changes, your plan should too.",
-    "Understand the difference between an asset and a liability. Buy more assets.",
-    "Never co-sign a loan. You take 100% of the risk with 0% of the benefit.",
-    "The best investment is one you understand completely.",
-    "Compound interest works for you in investments and against you in debt.",
-    "Know your 'enough' — contentment is a superpower in personal finance.",
-    "Automate everything: savings, bill pay, investments. Remove willpower.",
-    "Money is a tool. Decide what you want to build with it.",
-    "'Rich' is income. 'Wealthy' is having assets that work while you sleep.",
-    "Live below your means — it's the single most powerful financial habit.",
-    "Index funds beat the vast majority of actively managed funds over 10+ years.",
-    "Your biggest financial risk is often your own behaviour during downturns.",
-    "Compare prices without guilt — it's not cheap, it's intelligent.",
-    "Set a 'financial date' with your partner monthly — money talks prevent fights.",
-    "Diversification is the only free lunch in investing.",
-    "Inflation is a silent tax — your savings must grow faster than inflation.",
-    "Don't time the market; time in the market is the strategy that works.",
-    "Delay large purchases by 1 month — the need often disappears.",
-    "Understand your financial 'why' — motivation needs a purpose to be sustainable.",
-    "The best time to plant a financial tree was 10 years ago. The second best is today.",
-    "Wealth is built in boring increments, not exciting moments.",
-    "Don't compare your situation to others' — you see their highlight reel.",
-    "Financial literacy is a skill. Study it like any other valuable skill.",
-    "Keep a 'money journal' — write about your spending feelings once a week.",
-    "Money can buy freedom. That's the most valuable thing it can buy.",
-    "Know your hourly rate — it changes how you value both time and purchases.",
-    "The goal of budgeting is not restriction — it's intentionality.",
-    "Small, consistent actions beat large, irregular ones in personal finance.",
-    "Budgeting is not a punishment — it's a plan for the life you want.",
-    "Every currency unit has a job. Give it instructions, or it will spend itself.",
-    "Financial stress is a leading cause of relationship conflict. Communicate openly.",
-    "Ask for raises — the biggest income jump most people get is from changing jobs.",
-    "Build multiple income streams — a single income is a single point of failure.",
-    "Generosity and financial health aren't opposites — giving is part of the mindset.",
-    "Teach your children about money — it isn't in most school curricula.",
-    "The best savings account is the one you actually use consistently.",
-    "Use a simple net worth spreadsheet and update it monthly.",
-    "Your financial plan should reflect your values, not society's expectations.",
-    "Wealth is not about income — it's about the gap between earn and spend.",
-    "A good budget has room for fun. A budget you hate is a budget you'll abandon.",
-    "Never let perfection stop you from starting — an imperfect budget beats none.",
-    "Financial confidence is built one correct decision at a time.",
-    "Know the fees on every financial product you own. Fees compound against you.",
-    "Long-term thinking is the ultimate financial superpower.",
-    "The 'latte factor' is real — small habitual expenses compound into large sums.",
-    "Reduce financial complexity — fewer accounts, fewer products, fewer decisions.",
-    "A financial emergency fund is insurance. Keep it liquid.",
-    "Think in systems, not goals — build systems that automatically improve your finances.",
-    "Never stop learning about money — the financial landscape always changes.",
-    "Spend less than you earn. Invest the difference. Wait. Repeat. That's the strategy.",
-    "Financial freedom isn't about being rich — it's about having choices.",
-    "Consistency over time beats intensity in short bursts. Save a little, always.",
-    "Don't confuse income with wealth. Many high earners are broke.",
-    "Progress, not perfection, is the measure of financial success.",
-    "Define what 'enough' looks like — without that, the goal is endless.",
-    "Your best investment: time, not just money. Start early, never stop.",
-    "The best financial tool is a budget you actually look at every week.",
-    "Small wins matter: paying off one small debt creates momentum for bigger ones.",
-    "Seek to understand before you invest — curiosity is free, ignorance can be costly.",
-    "Spend intentionally, save systematically, invest consistently. Repeat for 30 years.",
-    "Delayed gratification is a learnable skill — and one of the most valuable.",
-    "Know your net worth to the number. People who track wealth build more of it.",
-    "Every financial decision is a trade-off. Know what you're trading.",
-    "Budget for joy. A life without planned pleasure leads to unplanned overspending.",
-    "One book, one mentor, one community can transform your financial trajectory.",
-    "Your future self is depending on the choices you make today.",
-    "Financial success is built with ordinary income and extraordinary habits.",
-    "The best financial decision you can make today: start.",
-    "Review, reflect, adjust. Your budget is a living document, not a sentence.",
-    "Use your budget as a communication tool with your household — transparency builds trust.",
-    "The enemy of financial progress is inertia. Any action beats no action.",
-    "Wealth built on debt is fragile. Wealth built on savings and investment is durable.",
-    "A strong financial foundation gives you freedom to take career and life risks.",
-    "Time is the one financial resource you can never get back. Use it wisely.",
-    "Surround yourself with financially responsible people — mindsets are contagious.",
-    "Know the difference between price and value — cheap now can be expensive later.",
-    "Your spending reveals your real values — look at your bank statement as a mirror.",
-    "Master one financial habit at a time — too many at once leads to none.",
-    "Stay humble about financial projections — plan for the unexpected.",
-    "True wealth is having more time than money obligations.",
-    "Remember why you started — revisit your financial 'why' when motivation fades."
-  ]
-};
-
-var country=COUNTRIES[0],rawIncome=country.inc,freq='monthly';
-var ratios={needs:50,wants:30,savings:20};
-var TOM={monthly:1,weekly:4.333,annual:1/12};
-var FLB={monthly:'Monthly',weekly:'Weekly',annual:'Annual'};
-
-function q(s){return ROOT.querySelector(s)}
-function qa(s){return ROOT.querySelectorAll(s)}
-
-var incEl=q('#ba-income'),pfxEl=q('#ba-pfx'),ctEl=q('#ba-cur-tag'),flEl=q('#ba-flag'),selEl=q('#ba-country');
-var nPct=q('#ba-n-pct'),wPct=q('#ba-w-pct'),sPct=q('#ba-s-pct');
-var nAmt=q('#ba-n-amt'),wAmt=q('#ba-w-amt'),sAmt=q('#ba-s-amt');
-var nBar=q('#ba-n-bar'),wBar=q('#ba-w-bar'),sBar=q('#ba-s-bar');
-var pnEl=q('#ba-pn'),pwEl=q('#ba-pw'),psEl=q('#ba-ps');
-var slN=q('#ba-sl-needs'),slW=q('#ba-sl-wants'),slS=q('#ba-sl-savings');
-var slNv=q('#ba-sl-nv'),slWv=q('#ba-sl-wv'),slSv=q('#ba-sl-sv');
-var sumEl=q('#ba-sum');
-var tipTxt=q('#ba-tip-text'),tipBadge=q('#ba-tip-badge');
-var tipCnt=q('#ba-tip-count'),tipProg=q('#ba-tip-prog');
-
-COUNTRIES.forEach(function(c,i){
-  var o=document.createElement('option');
-  o.value=i;o.textContent=c.name+'  ('+c.cur+')';
-  if(i===0)o.selected=true;
-  selEl.appendChild(o);
+const sorted=[COUNTRIES[0],...COUNTRIES.slice(1).sort((a,b)=>a.name.localeCompare(b.name))];
+const cSel=document.getElementById('countrySelect');
+sorted.forEach(c=>{
+  const o=document.createElement('option');
+  o.value=c.code;
+  o.textContent=c.flag+' '+c.name+' ('+c.currency+')';
+  if(c.code==='PK')o.selected=true;
+  cSel.appendChild(o);
 });
 
-selEl.addEventListener('change',function(){
-  country=COUNTRIES[parseInt(this.value)];
-  flEl.textContent=country.flag;
-  pfxEl.textContent=country.sym.trim();
-  ctEl.textContent=country.cur;
-  rawIncome=country.inc;incEl.value=rawIncome;
-  render();rebuildTipPool();
-});
+let active=sorted[0];
 
-function fmt(n){return country.sym+Math.round(n).toLocaleString('en-US')}
-
-function animCount(el,end){
-  var start=parseFloat(el.dataset.v)||0;
-  el.dataset.v=end;
-  var dur=380,t0=performance.now();
-  function tick(now){
-    var p=Math.min((now-t0)/dur,1),e=1-Math.pow(1-p,3);
-    el.textContent=country.sym+Math.round(start+(end-start)*e).toLocaleString('en-US');
-    if(p<1)requestAnimationFrame(tick);
+function fmt(n){
+  if(!isFinite(n))return active.sym+' 0';
+  try{
+    return new Intl.NumberFormat(active.locale,{
+      style:'currency',currency:active.currency,
+      minimumFractionDigits:0,maximumFractionDigits:0
+    }).format(Math.round(n));
+  }catch(e){
+    return active.sym+' '+Math.round(n).toLocaleString();
   }
-  requestAnimationFrame(tick);
+}
+function fmtShort(n){
+  const a=Math.abs(n);
+  if(a>=10000000)return active.sym+' '+(n/10000000).toFixed(1)+'Cr';
+  if(a>=1000000)return active.sym+' '+(n/1000000).toFixed(1)+'M';
+  if(a>=100000)return active.sym+' '+(n/100000).toFixed(1)+'L';
+  if(a>=1000)return active.sym+' '+Math.round(n/1000)+'k';
+  return fmt(n);
 }
 
-var cPlug={
-  id:'ba_c',
-  afterDraw:function(chart){
-    var cd=chart.options._cd;if(!cd)return;
-    var ctx=chart.ctx,w=chart.width,h=chart.height;
-    ctx.save();
-    ctx.font='600 9px Inter,sans-serif';
-    ctx.fillStyle='#7878a0';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(cd.label.toUpperCase(),w/2,h/2-13);
-    ctx.font='800 14px Inter,sans-serif';
-    ctx.fillStyle='#ffffff';
-    ctx.fillText(cd.amount,w/2,h/2+10);
-    ctx.restore();
-  }
+const S={
+  rNeeds:document.getElementById('rNeeds'),
+  rWants:document.getElementById('rWants'),
+  rSavings:document.getElementById('rSavings')
 };
-
-var canvas=q('#ba-donut');
-var chart=new Chart(canvas,{
-  type:'doughnut',plugins:[cPlug],
-  data:{datasets:[{data:[50,30,20],backgroundColor:['#6366f1','#ec4899','#10b981'],borderWidth:0,hoverOffset:8}]},
-  options:{
-    cutout:'72%',
-    animation:{duration:450,easing:'easeInOutQuart'},
-    plugins:{legend:{display:false},tooltip:{enabled:false}},
-    _cd:{label:'Monthly',amount:fmt(rawIncome)}
+function rebalance(changed){
+  let v=parseInt(S[changed].value);
+  v=Math.max(0,Math.min(100,v));
+  S[changed].value=v;
+  const oth=Object.keys(S).filter(k=>k!==changed);
+  const rem=100-v;
+  const sum=parseInt(S[oth[0]].value)+parseInt(S[oth[1]].value);
+  if(sum===0){
+    const h=Math.floor(rem/2);
+    S[oth[0]].value=h;S[oth[1]].value=rem-h;
+  }else{
+    const r0=parseInt(S[oth[0]].value)/sum;
+    let v0=Math.round(rem*r0),v1=rem-v0;
+    if(v0<0)v0=0;if(v1<0)v1=0;
+    S[oth[0]].value=v0;S[oth[1]].value=v1;
   }
-});
-
-function render(){
-  var mo=rawIncome*TOM[freq];
-  var n=mo*ratios.needs/100,w=mo*ratios.wants/100,s=mo*ratios.savings/100;
-  chart.data.datasets[0].data=[ratios.needs,ratios.wants,ratios.savings];
-  chart.options._cd={label:FLB[freq],amount:fmt(mo)};
-  chart.update('active');
-  nPct.textContent=ratios.needs+'%';wPct.textContent=ratios.wants+'%';sPct.textContent=ratios.savings+'%';
-  animCount(nAmt,n);animCount(wAmt,w);animCount(sAmt,s);
-  nBar.style.width=ratios.needs+'%';wBar.style.width=ratios.wants+'%';sBar.style.width=ratios.savings+'%';
-  var a=mo*12;
-  animCount(pnEl,a*ratios.needs/100);animCount(pwEl,a*ratios.wants/100);animCount(psEl,a*ratios.savings/100);
-  slN.style.setProperty('--p',ratios.needs+'%');
-  slW.style.setProperty('--p',ratios.wants+'%');
-  slS.style.setProperty('--p',ratios.savings+'%');
+}
+const TC={rNeeds:'#2563eb',rWants:'#059669',rSavings:'#7c3aed'};
+function updateTrack(id,val){
+  S[id].style.background=`linear-gradient(to right,${TC[id]} ${val}%,#e2e8f0 ${val}%)`;
 }
 
-incEl.addEventListener('input',function(){rawIncome=parseFloat(this.value)||0;render();rebuildTipPool();});
-
-qa('.fbtn').forEach(function(b){
-  b.addEventListener('click',function(){
-    qa('.fbtn').forEach(function(x){x.classList.remove('act');});
-    this.classList.add('act');freq=this.dataset.freq;render();
+let DC=null,BC=null;
+function initCharts(){
+  DC=new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{labels:['Needs','Wants','Savings'],datasets:[{
+      data:[50,30,20],
+      backgroundColor:['#3b82f6','#10b981','#8b5cf6'],
+      hoverBackgroundColor:['#2563eb','#059669','#7c3aed'],
+      borderWidth:3,borderColor:'#fff',hoverBorderColor:'#fff'
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      animation:{animateRotate:true,duration:500},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.raw)}}}}
   });
+  BC=new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{labels:['Needs','Wants','Savings'],datasets:[
+      {label:'Monthly',data:[50000,30000,20000],backgroundColor:['#3b82f6','#10b981','#8b5cf6'],borderRadius:6,borderSkipped:false,barPercentage:.52},
+      {label:'Annual',data:[600000,360000,240000],backgroundColor:['rgba(59,130,246,.18)','rgba(16,185,129,.18)','rgba(139,92,246,.18)'],borderRadius:6,borderSkipped:false,barPercentage:.52}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:11,family:'Inter'}}},
+        y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#94a3b8',font:{size:10,family:'Inter'},callback:v=>fmtShort(v)}}
+      }}
+  });
+}
+
+function st(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+
+function update(){
+  const raw=parseFloat(document.getElementById('incomeInput').value)||0;
+  const period=document.getElementById('periodSelect').value;
+  let monthly=raw;
+  if(period==='weekly')monthly=raw*4.33;
+  else if(period==='annual')monthly=raw/12;
+  const np=parseInt(S.rNeeds.value),wp=parseInt(S.rWants.value),sp=parseInt(S.rSavings.value);
+  const N=monthly*np/100,W=monthly*wp/100,Sv=monthly*sp/100,d=30.44;
+
+  st('periodNote',{monthly:'Showing monthly split',weekly:'Weekly income x 4.33 = monthly',annual:'Annual income / 12 = monthly'}[period]);
+
+  /* Cards — desktop IDs */
+  st('cNPct',np+'%');st('cWPct',wp+'%');st('cSPct',sp+'%');
+  st('cNAmt',fmt(N));st('cWAmt',fmt(W));st('cSAmt',fmt(Sv));
+  st('cNDay',fmt(N/d)+' / day');st('cWDay',fmt(W/d)+' / day');st('cSDay',fmt(Sv/d)+' / day');
+  /* Cards — mobile IDs */
+  st('cNPct2',np+'%');st('cWPct2',wp+'%');st('cSPct2',sp+'%');
+  st('cNAmt2',fmt(N));st('cWAmt2',fmt(W));st('cSAmt2',fmt(Sv));
+  st('cNDay2',fmt(N/d)+' / day');st('cWDay2',fmt(W/d)+' / day');st('cSDay2',fmt(Sv/d)+' / day');
+  /* Mini bars */
+  document.getElementById('mbN').style.width=Math.min(np,100)+'%';
+  document.getElementById('mbW').style.width=Math.min(wp,100)+'%';
+  document.getElementById('mbS').style.width=Math.min(sp,100)+'%';
+  /* Sliders */
+  st('vNeeds',np+'%');st('vWants',wp+'%');st('vSavings',sp+'%');
+  updateTrack('rNeeds',np);updateTrack('rWants',wp);updateTrack('rSavings',sp);
+  /* Total bar */
+  const total=np+wp+sp;
+  document.getElementById('tbN').style.width=np+'%';
+  document.getElementById('tbW').style.width=wp+'%';
+  document.getElementById('tbS').style.width=sp+'%';
+  const stEl=document.getElementById('totStatus');
+  if(total===100){stEl.className='tot-st t-ok';stEl.textContent='✓ 100% — perfectly balanced';}
+  else{stEl.className='tot-st t-err';stEl.textContent='⚠ '+total+'% — adjust to reach 100%';}
+  /* Legend + donut center */
+  st('lgN',fmt(N));st('lgW',fmt(W));st('lgS',fmt(Sv));
+  st('dcVal',fmtShort(monthly));
+  /* Progress bars */
+  document.getElementById('pbN').style.width=Math.min(np,100)+'%';
+  document.getElementById('pbW').style.width=Math.min(wp,100)+'%';
+  document.getElementById('pbS').style.width=Math.min(sp,100)+'%';
+  st('pbNV',fmt(N)+' ('+np+'%)');st('pbWV',fmt(W)+' ('+wp+'%)');st('pbSV',fmt(Sv)+' ('+sp+'%)');
+  /* Breakdown */
+  st('bsN',fmt(N));st('bsW',fmt(W));st('bsS',fmt(Sv));
+  st('b1',fmt(N*.40));st('b2',fmt(N*.20));st('b3',fmt(N*.15));st('b4',fmt(N*.13));st('b5',fmt(N*.12));
+  st('b6',fmt(W*.28));st('b7',fmt(W*.22));st('b8',fmt(W*.22));st('b9',fmt(W*.18));st('b10',fmt(W*.10));
+  st('b11',fmt(Sv*.40));st('b12',fmt(Sv*.30));st('b13',fmt(Sv*.20));st('b14',fmt(Sv*.10));
+  /* Annual */
+  st('aN',fmt(N*12));st('aW',fmt(W*12));st('aS',fmt(Sv*12));st('aSStr',fmt(Sv*12));
+  /* Charts */
+  if(DC){DC.data.datasets[0].data=[N,W,Sv];DC.update('none');}
+  if(BC){BC.data.datasets[0].data=[N,W,Sv];BC.data.datasets[1].data=[N*12,W*12,Sv*12];BC.update('none');}
+}
+
+document.getElementById('incomeInput').addEventListener('input',update);
+document.getElementById('periodSelect').addEventListener('change',update);
+Object.keys(S).forEach(id=>S[id].addEventListener('input',()=>{rebalance(id);update();}));
+document.getElementById('resetBtn').addEventListener('click',()=>{S.rNeeds.value=50;S.rWants.value=30;S.rSavings.value=20;update();});
+
+cSel.addEventListener('change',function(){
+  const c=sorted.find(x=>x.code===this.value);if(!c)return;
+  active=c;
+  document.getElementById('currSym').textContent=c.sym;
+  document.getElementById('flagEl').textContent=c.flag;
+  document.getElementById('locLabel').textContent=c.name;
+  document.getElementById('locCur').textContent=c.currency+' — '+c.name;
+  update();
 });
 
-function clamp(v,lo,hi){return Math.min(hi,Math.max(lo,v))}
-
-function onSlider(el){
-  var val=parseInt(el.value);
-  var key=el.id==='ba-sl-needs'?'needs':el.id==='ba-sl-wants'?'wants':'savings';
-  var others=key==='needs'?['wants','savings']:key==='wants'?['needs','savings']:['needs','wants'];
-  var delta=val-ratios[key];ratios[key]=val;
-  var oa=ratios[others[0]],ob=ratios[others[1]],tot=oa+ob;
-  if(tot>0){
-    ratios[others[0]]=clamp(Math.round(oa-delta*(oa/tot)),0,100);
-    ratios[others[1]]=100-ratios[key]-ratios[others[0]];
-  } else {
-    ratios[others[0]]=clamp(Math.round(-delta/2),0,100);
-    ratios[others[1]]=100-ratios[key]-ratios[others[0]];
-  }
-  ratios[others[1]]=clamp(ratios[others[1]],0,100);
-  var sum=ratios.needs+ratios.wants+ratios.savings;
-  if(sum!==100)ratios[key]=clamp(ratios[key]+100-sum,0,100);
-  slN.value=ratios.needs;slW.value=ratios.wants;slS.value=ratios.savings;
-  slNv.textContent=ratios.needs+'%';slWv.textContent=ratios.wants+'%';slSv.textContent=ratios.savings+'%';
-  var s2=ratios.needs+ratios.wants+ratios.savings;
-  sumEl.textContent=s2+'%';
-  sumEl.className='sumbadge'+(s2===100?'':' warn');
-  render();rebuildTipPool();
+async function detect(){
+  try{
+    const r=await fetch('https://ipapi.co/json/');
+    const d=await r.json();
+    const cc=d.country_code||'PK';
+    const f=sorted.find(x=>x.code===cc);
+    if(f&&cc!=='PK'){
+      active=f;cSel.value=f.code;
+      document.getElementById('currSym').textContent=f.sym;
+      document.getElementById('flagEl').textContent=f.flag;
+      document.getElementById('locLabel').textContent=f.name;
+      document.getElementById('locCur').textContent=f.currency+' — '+f.name;
+      update();
+    }
+  }catch(e){}
 }
 
-slN.addEventListener('input',function(){onSlider(slN);});
-slW.addEventListener('input',function(){onSlider(slW);});
-slS.addEventListener('input',function(){onSlider(slS);});
-
-q('#ba-reset').addEventListener('click',function(){
-  ratios={needs:50,wants:30,savings:20};
-  slN.value=50;slW.value=30;slS.value=20;
-  slNv.textContent='50%';slWv.textContent='30%';slSv.textContent='20%';
-  sumEl.textContent='100%';sumEl.className='sumbadge';
-  render();rebuildTipPool();
-});
-
-var tipPool=[],tipLbl='general',tipIdx=0,tipTimer=null;
-
-function shuffle(arr){
-  var a=arr.slice();
-  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
-  return a;
-}
-
-function buildPool(){
-  var mo=rawIncome*TOM[freq],pool=[],lbl='general';
-  if(ratios.savings<10){pool=TIPS.savings.concat();lbl='savings';}
-  else if(ratios.needs>58){pool=TIPS.needs.concat();lbl='needs';}
-  else if(ratios.wants>38){pool=TIPS.wants.concat();lbl='wants';}
-  else if(ratios.savings>28){pool=TIPS.savings.concat();lbl='savings';}
-  else{pool=TIPS.general.concat();lbl='general';}
-  if(mo<2500)pool=pool.concat(TIPS.income_low);
-  else if(mo>7500)pool=pool.concat(TIPS.income_high);
-  pool=pool.concat(TIPS.general.slice(0,25));
-  tipLbl=lbl;return shuffle(pool);
-}
-
-function restartBar(){
-  tipProg.style.animation='none';void tipProg.offsetWidth;
-  tipProg.style.animation='tipbar 15s linear forwards';
-}
-
-function showTip(idx,anim){
-  if(!tipPool.length)return;
-  var tip=tipPool[idx%tipPool.length];
-  function apply(){tipTxt.textContent=tip;tipTxt.classList.remove('out');restartBar();}
-  if(anim){tipTxt.classList.add('out');setTimeout(apply,320);}else{apply();}
-  tipCnt.textContent='Tip '+(idx%tipPool.length+1)+' of '+tipPool.length;
-  tipBadge.textContent=tipLbl.charAt(0).toUpperCase()+tipLbl.slice(1);
-  tipBadge.className='tipbadge '+(tipLbl==='needs'?'bn':tipLbl==='wants'?'bw':tipLbl==='savings'?'bs':'bg');
-}
-
-function startTimer(){
-  clearInterval(tipTimer);
-  tipTimer=setInterval(function(){tipIdx=(tipIdx+1)%tipPool.length;showTip(tipIdx,true);},15000);
-}
-
-function rebuildTipPool(){
-  clearInterval(tipTimer);tipPool=buildPool();tipIdx=0;showTip(0,false);startTimer();
-}
-
-q('#ba-tip-next').addEventListener('click',function(){
-  clearInterval(tipTimer);tipIdx=(tipIdx+1)%tipPool.length;showTip(tipIdx,true);startTimer();
-});
-q('#ba-tip-prev').addEventListener('click',function(){
-  clearInterval(tipTimer);tipIdx=(tipIdx-1+tipPool.length)%tipPool.length;showTip(tipIdx,true);startTimer();
-});
-
-render();rebuildTipPool();
-}());
+window.addEventListener('load',()=>{initCharts();update();detect();});
 </script>
 </body>
 </html>
